@@ -1,5 +1,5 @@
 // ====== CONEXIÓN CON TU GOOGLE SHEET (cambia solo esta línea) ======
-const GOOGLE_SHEET_CSV_URL = "PEGA-AQUÍ-TU-ENLACE-CSV-PÚBLICO";
+const GOOGLE_SHEET_CSV_URL = const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv";
 
 // Cache para que sea rapidísimo después de la primera carga
 let proveedoresCache = null;
