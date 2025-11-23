@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generador de Orden de Compra - Hard Hat Solutions</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="control-panel no-print">
+        <h2>Datos de la OC</h2>
+        <input type="text" id="inputObra" placeholder="Obra (ej: DPCALAMEDA)">
+        <input type="text" id="inputProveedor" placeholder="Razón Social Proveedor">
+        <input type="text" id="inputRutProv" placeholder="RUT Proveedor">
+        <input type="text" id="inputDireccion" placeholder="Dirección">
+        <input type="date" id="inputFecha" valueAsDate="new Date()">
+        
+        <h3>Ítems</h3>
+        <div id="items-form">
+            <input type="text" id="newCode" placeholder="Cód." style="width: 60px;">
+            <input type="text" id="newDesc" placeholder="Descripción">
+            <input type="number" id="newQty" placeholder="Cant." style="width: 60px;">
+            <input type="number" id="newPrice" placeholder="Precio Unit.">
+            <button onclick="agregarItem()">+ Agregar</button>
+        </div>
+        <br>
+        <button class="btn-print" onclick="window.print()">🖨️ Descargar PDF</button>
+    </div>
+
+    <div class="page">
+        <header>
+            <div class="logo-section">
+                <img src="logo.jpg" alt="Hard Hat Logo" style="width: 120px;"> <div class="company-info">
+                    <h3>HARDHAT SOLUTIONS SPA</h3> <p>Giro: CONSTRUCCION</p> <p>RUT: 78.293.581-K</p> <p>Dr. Manuel Barros Borgoño 71, Of 1303, Providencia</p> <p>Contacto: contacto@hhs.cl | +56 9 6254 3173</p> </div>
+            </div>
+            <div class="oc-box">
+                <h2>ORDEN DE COMPRA</h2> <div class="oc-number">N° <span id="ocNum">001</span></div>
+                <p>Fecha: <span id="dispFecha"></span></p>
+            </div>
+        </header>
+
+        <section class="info-grid">
+            <div class="box">
+                <strong>Señor(es):</strong> <span id="dispProv"></span><br>
+                <strong>RUT:</strong> <span id="dispRut"></span><br>
+                <strong>Dirección:</strong> <span id="dispDir"></span>
+            </div>
+            <div class="box">
+                <strong>Obra:</strong> <span id="dispObra"></span><br> <strong>Condición de Pago:</strong> Contado<br> <strong>Moneda:</strong> Peso Chileno </div>
+        </section>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Unid.</th>
+                    <th>Cant.</th>
+                    <th>Precio Unit.</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="tablaCuerpo">
+                </tbody>
+        </table>
+
+        <div class="totals-section">
+            <div class="totals-box">
+                <div class="row"><span>Neto:</span> <span id="totalNeto">$0</span></div>
+                <div class="row"><span>IVA (19%):</span> <span id="totalIva">$0</span></div>
+                <div class="row total"><span>TOTAL:</span> <span id="totalFinal">$0</span></div>
+            </div>
+        </div>
+
+        <footer class="footer-notes">
+            <div class="notes">
+                <strong>Notas al Proveedor:</strong> <ul>
+                    <li>1. Toda facturación deberá adjuntar esta O.C.</li> <li>2. No se aceptarán facturaciones con precios distintos a esta O.C.</li> <li>3. El proveedor no deberá despachar sin autorización expresa.</li> </ul>
+            </div>
+            <div class="signatures">
+                <div class="sign-box">
+                    <br><br><br>
+                    <hr>
+                    <p>Jorge Chacon</p> <p>Gerente Operaciones</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
