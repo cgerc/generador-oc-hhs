@@ -10,31 +10,86 @@
     <div class="control-panel no-print">
         <h2>Datos de la OC</h2>
         <input type="text" id="inputObra" placeholder="Obra (ej: DPCALAMEDA)">
-        <input type="text" id="inputProveedor" placeholder="Razón Social Proveedor">
+        
+        <select id="inputProveedor">
+            <option value="" disabled selected>Selecciona Clase / Razón Social</option>
+            <option>OOCC</option>
+            <option>ANSUL</option>
+            <option>ASEO</option>
+            <option>CCDD</option>
+            <option>CERAMISTA</option>
+            <option>CIELO MODULAR</option>
+            <option>CLIMA</option>
+            <option>CORTINA ROLLO</option>
+            <option>CRISTALERO</option>
+            <option>EEMM</option>
+            <option>ELECTRICO</option>
+            <option>FLETES Y ESCOMBROS</option>
+            <option>GAS</option>
+            <option>HOJALATERO</option>
+            <option>HONORARIOS PROFESIONALES</option>
+            <option>IMPERMEABILIZACION</option>
+            <option>INCENDIO</option>
+            <option>INSTALADOR PAVIMENTOS ESPECIALES</option>
+            <option>INSTALADOR REVESTIMIENTO ESPECIALES</option>
+            <option>LETREROS</option>
+            <option>MUEBLISTA</option>
+            <option>OBRA GRUESA</option>
+            <option>PINTOR</option>
+            <option>SANITARIO</option>
+            <option>SC OOCC</option>
+            <option>ACEROS GASTRONOMICOS</option>
+            <option>ARTEFACTOS SANITARIOS</option>
+            <option>ILUMINACION</option>
+            <option>PAVIMENTOS Y REVESTIMIENTOS DE MUROS</option>
+            <option>PUERTAS</option>
+            <option>MATERIALES OBRA</option>
+            <option>ARRIENDO EQUIPOS Y ANDAMIOS</option>
+            <option>BOLETAS Y SEGUROS</option>
+            <option>CAJA CHICA</option>
+            <option>EEPP Y PREVENCION</option>
+            <option>GASTOS GENERALES</option>
+            <option>INSTALACIONES DE FAENAS</option>
+            <option>UTILIDADES</option>
+        </select>
+
         <input type="text" id="inputRutProv" placeholder="RUT Proveedor">
         <input type="text" id="inputDireccion" placeholder="Dirección">
-        <input type="date" id="inputFecha" valueAsDate="new Date()">
-        
+        <input type="date" id="inputFecha" readonly>
+
+        <h3>Notas al Proveedor (opcional)</h3>
+        <textarea id="inputNotas" placeholder="Ej: Entrega en obra antes del 30/04, incluir certificado de calibración, etc." rows="4"></textarea>
+
         <h3>Ítems</h3>
         <div id="items-form">
-            <input type="text" id="newCode" placeholder="Cód." style="width: 60px;">
+            <select id="newClase" style="width: 180px;">
+                <option value="" disabled selected>Clase</option>
+                <!-- Se llena igual que el dropdown de arriba -->
+            </select>
             <input type="text" id="newDesc" placeholder="Descripción">
-            <input type="number" id="newQty" placeholder="Cant." style="width: 60px;">
+            <input type="number" id="newQty" placeholder="Cant." style="width: 70px;">
             <input type="number" id="newPrice" placeholder="Precio Unit.">
             <button onclick="agregarItem()">+ Agregar</button>
         </div>
         <br>
-        <button class="btn-print" onclick="window.print()">🖨️ Descargar PDF</button>
+        <button class="btn-print" onclick="window.print()">🖨️ Generar y Descargar PDF</button>
     </div>
 
     <div class="page">
         <header>
             <div class="logo-section">
-                <img src="logo.jpg" alt="Hard Hat Logo" style="width: 120px;"> <div class="company-info">
-                    <h3>HARDHAT SOLUTIONS SPA</h3> <p>Giro: CONSTRUCCION</p> <p>RUT: 78.293.581-K</p> <p>Dr. Manuel Barros Borgoño 71, Of 1303, Providencia</p> <p>Contacto: contacto@hhs.cl | +56 9 6254 3173</p> </div>
+                <img src="logo.jpg" alt="Hard Hat Logo" style="width: 120px;">
+                <div class="company-info">
+                    <h3>HARDHAT SOLUTIONS SPA</h3>
+                    <p>Giro: CONSTRUCCION</p>
+                    <p>RUT: 78.293.581-K</p>
+                    <p>Dr. Manuel Barros Borgoño 71, Of 1101, Providencia</p>
+                    <p>Contacto: contacto@hhs.cl | +56 9 6254 3173</p>
+                </div>
             </div>
             <div class="oc-box">
-                <h2>ORDEN DE COMPRA</h2> <div class="oc-number">N° <span id="ocNum">001</span></div>
+                <h2>ORDEN DE COMPRA</h2>
+                <div class="oc-number">N° <span id="ocNum">001</span></div>
                 <p>Fecha: <span id="dispFecha"></span></p>
             </div>
         </header>
@@ -46,13 +101,16 @@
                 <strong>Dirección:</strong> <span id="dispDir"></span>
             </div>
             <div class="box">
-                <strong>Obra:</strong> <span id="dispObra"></span><br> <strong>Condición de Pago:</strong> Contado<br> <strong>Moneda:</strong> Peso Chileno </div>
+                <strong>Obra:</strong> <span id="dispObra"></span><br>
+                <strong>Condición de Pago:</strong> Contado<br>
+                <strong>Moneda:</strong> Peso Chileno
+            </div>
         </section>
 
         <table class="items-table">
             <thead>
                 <tr>
-                    <th>Código</th>
+                    <th style="width: 140px;">Clase</th>
                     <th>Descripción</th>
                     <th>Unid.</th>
                     <th>Cant.</th>
@@ -60,8 +118,7 @@
                     <th>Total</th>
                 </tr>
             </thead>
-            <tbody id="tablaCuerpo">
-                </tbody>
+            <tbody id="tablaCuerpo"></tbody>
         </table>
 
         <div class="totals-section">
@@ -74,14 +131,19 @@
 
         <footer class="footer-notes">
             <div class="notes">
-                <strong>Notas al Proveedor:</strong> <ul>
-                    <li>1. Toda facturación deberá adjuntar esta O.C.</li> <li>2. No se aceptarán facturaciones con precios distintos a esta O.C.</li> <li>3. El proveedor no deberá despachar sin autorización expresa.</li> </ul>
+                <strong>Notas al Proveedor:</strong>
+                <div id="dispNotas" style="font-size: 10px; margin-top: 5px;">
+                    • Toda facturación deberá adjuntar esta O.C.<br>
+                    • No se aceptarán facturaciones con precios distintos a esta O.C.<br>
+                    <span id="notasExtra"></span>
+                </div>
             </div>
             <div class="signatures">
                 <div class="sign-box">
                     <br><br><br>
                     <hr>
-                    <p>Jorge Chacon</p> <p>Gerente Operaciones</p>
+                    <p>Jorge Chacon</p>
+                    <p>Gerente General</p>
                 </div>
             </div>
         </footer>
