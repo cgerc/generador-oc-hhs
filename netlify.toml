@@ -3,7 +3,6 @@
   to = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv"
   status = 200
   force = true
-  headers = { Access-Control-Allow-Origin = "*" }
 
 [[headers]]
   for = "/proxy-sheet"
