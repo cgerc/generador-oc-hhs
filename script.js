@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Dropdown RAZÓN SOCIAL
             const selProv = document.getElementById('inputProveedor');
-            selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
+            selProv.innerHTML = '<option value="">Selecciona Razón Social</option>';
             Object.keys(data).sort().forEach(clase => {
                 const opt = document.createElement('option');
                 opt.value = clase;
