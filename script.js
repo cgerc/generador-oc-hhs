@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
     // === PROVEEDORES ===
-    fetch('/data/proveedores.csv')
+    fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
+
         .then(r => r.text())
         .then(csv => {
             const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
@@ -54,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     // === OBRAS ===
-    fetch('/data/obras.csv')
+    fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
         .then(r => r.text())
         .then(csv => {
             const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
