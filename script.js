@@ -2,91 +2,90 @@ function formatearMoneda(numero) {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(numero);
 }
 
-// Fecha automática de hoy
 document.addEventListener('DOMContentLoaded', function() {
+    // Fecha automática
     document.getElementById('inputFecha').valueAsDate = new Date();
     document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
-    // Genera el dropdown de clases si no existe (hard-coded para seguridad)
-    const select = document.getElementById('inputProveedor');
-    if (select && select.children.length <= 1) {
-        const clases = ['OOCC', 'ANSUL', 'ASEO', 'CCDD', 'CERAMISTA', 'CIELO MODULAR', 'CLIMA', 'CORTINA ROLLO', 'CRISTALERO', 'EEMM', 'ELECTRICO', 'FLETES Y ESCOMBROS', 'GAS', 'HOJALATERO', 'HONORARIOS PROFESIONALES', 'IMPERMEABILIZACION', 'INCENDIO', 'INSTALADOR PAVIMENTOS ESPECIALES', 'INSTALADOR REVESTIMIENTO ESPECIALES', 'LETREROS', 'MUEBLISTA', 'OBRA GRUESA', 'PINTOR', 'SANITARIO', 'SC OOCC', 'ACEROS GASTRONOMICOS', 'ARTEFACTOS SANITARIOS', 'ILUMINACION', 'PAVIMENTOS Y REVESTIMIENTOS DE MUROS', 'PUERTAS', 'MATERIALES OBRA', 'ARRIENDO EQUIPOS Y ANDAMIOS', 'BOLETAS Y SEGUROS', 'CAJA CHICA', 'EEPP Y PREVENCION', 'GASTOS GENERALES', 'INSTALACIONES DE FAENAS', 'UTILIDADES'];
-        clases.forEach(clase => {
-            const option = document.createElement('option');
-            option.value = clase;
-            option.textContent = clase;
-            select.appendChild(option);
-        });
-    }
-});
+    // ==================== PROVEEDORES ====================
+    fetch('/proxy-sheet')
+        .then(r => r.text())
+        .then(texto => {
+            const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+            const proveedores = {};
 
-// ====== CONEXIÓN CON TU GOOGLE SHEET (usa proxy para CORS) ======
-const GOOGLE_SHEET_CSV_URL = "/proxy-sheet"; // Netlify lo maneja con netlify.toml
-
-let proveedoresCache = null;
-
-async function cargarProveedores() {
-    if (proveedoresCache) return proveedoresCache;
-
-    try {
-        const response = await fetch(GOOGLE_SHEET_CSV_URL);
-        if (!response.ok) throw new Error("Error al cargar Sheet");
-        const texto = await response.text();
-        const lineas = texto.split("\n").filter(l => l.trim() !== "");
-
-        const proveedores = {};
-        const encabezados = lineas[0].split(",");
-        
-        for (let i = 1; i < lineas.length; i++) {
-            let valores = lineas[i].split(",");
-            valores = valores.map(v => v.replace(/"/g, "").trim());
-            const clase = valores[0];
-            if (clase) {
-                proveedores[clase] = {
-                    rut: valores[2] || "",
-                    dir: valores[3] || ""
-                };
+            for (let i = 1; i < lineas.length; i++) {
+                const cols = lineas[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+                const clase = cols[0];
+                const razonSocial = cols[1];
+                const rut = cols[2];
+                const direccion = cols[3];
+                if (clase && razonSocial) {
+                    proveedores[clase] = { razonSocial, rut, direccion };
+                }
             }
-        }
-        proveedoresCache = proveedores;
-        console.log("Proveedores cargados:", Object.keys(proveedores).length);
-        return proveedores;
-    } catch (err) {
-        console.error("Error cargando proveedores:", err);
-        return {};
-    }
-}
 
-// Evento del dropdown - conexión automática
-document.getElementById('inputProveedor').addEventListener('change', async (e) => {
-    const clase = e.target.value.trim();
-    if (!clase) return;
+            // Dropdown proveedor → muestra Razón Social
+            const selectProv = document.getElementById('inputProveedor');
+            selectProv.innerHTML = '<option value="" disabled selected>Selecciona Razón Social...</option>';
+            Object.keys(proveedores).sort().forEach(clase => {
+                const opt = document.createElement('option');
+                opt.value = clase;
+                opt.textContent = proveedores[clase].razonSocial;
+                selectProv.appendChild(opt);
+            });
 
-    document.getElementById('dispProv').innerText = clase;
+            selectProv.addEventListener('change', function() {
+                const p = proveedores[this.value];
+                if (p) {
+                    document.getElementById('dispProv').innerText = p.razonSocial;
+                    document.getElementById('inputRutProv').value = p.rut;
+                    document.getElementById('inputDireccion').value = p.direccion;
+                    document.getElementById('dispRut').innerText = p.rut;
+                    document.getElementById('dispDir').innerText = p.direccion;
+                }
+            });
 
-    const data = await cargarProveedores();
-    const prov = data[clase];
+            // Dropdown ítems → solo Clase
+            const selectItem = document.getElementById('newClase');
+            selectItem.innerHTML = '<option value="" disabled selected>Clase</option>';
+            Object.keys(proveedores).sort().forEach(clase => {
+                const opt = document.createElement('option');
+                opt.value = clase;
+                opt.textContent = clase;
+                selectItem.appendChild(opt);
+            });
+        })
+        .catch(err => console.error("Error proveedores:", err));
 
-    if (prov) {
-        document.getElementById('inputRutProv').value = prov.rut;
-        document.getElementById('inputDireccion').value = prov.dir;
-        const dispRut = document.getElementById('dispRut');
-        const dispDir = document.getElementById('dispDir');
-        if (dispRut) dispRut.innerText = prov.rut;
-        if (dispDir) dispDir.innerText = prov.dir;
-        console.log("Proveedor cargado:", prov);
-    } else {
-        document.getElementById('inputRutProv').value = "";
-        document.getElementById('inputDireccion').value = "";
-        const dispRut = document.getElementById('dispRut');
-        const dispDir = document.getElementById('dispDir');
-        if (dispRut) dispRut.innerText = "";
-        if (dispDir) dispDir.innerText = "";
-        console.log("Clase no encontrada:", clase);
-    }
+    // ==================== OBRAS (solo nombre completo) ====================
+    fetch('/proxy-obras')
+        .then(r => r.text())
+        .then(texto => {
+            const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+            const select = document.getElementById('inputObraSelect');
+            select.innerHTML = '<option value="">Selecciona la obra...</option>';
+
+            for (let i = 1; i < lineas.length; i++) {
+                const nombre = lineas[i].split(',')[0].replace(/^"|"$/g, '').trim();
+                if (nombre && nombre !== "Obras") {  // evita que aparezca el título
+                    const opt = document.createElement('option');
+                    opt.value = nombre;
+                    opt.textContent = nombre;
+                    select.appendChild(opt);
+                }
+            }
+
+            select.addEventListener('change', function() {
+                const obra = this.value;
+                document.getElementById('inputObra').value = obra;
+                document.getElementById('dispObra').innerText = obra;
+            });
+        })
+        .catch(err => console.error("Error cargando obras:", err));
 });
 
-// Resto del código original (agregarItem, renderizarTabla, etc.)
+// ==================== ÍTEMS Y TABLA ====================
 let items = [];
 
 function agregarItem() {
@@ -101,7 +100,6 @@ function agregarItem() {
     items.push({ clase, desc, cant, precio, total: cant * precio });
     renderizarTabla();
 
-    document.getElementById('newClase').value = "";
     document.getElementById('newDesc').value = "";
     document.getElementById('newQty').value = "";
     document.getElementById('newPrice').value = "";
@@ -133,16 +131,3 @@ function renderizarTabla() {
     document.getElementById('totalIva').innerText = formatearMoneda(iva);
     document.getElementById('totalFinal').innerText = formatearMoneda(totalFinal);
 }
-
-// Actualizaciones en tiempo real
-document.getElementById('inputRutProv').addEventListener('input', (e) => {
-    const dispRut = document.getElementById('dispRut');
-    if (dispRut) dispRut.innerText = e.target.value;
-});
-document.getElementById('inputDireccion').addEventListener('input', (e) => {
-    const dispDir = document.getElementById('dispDir');
-    if (dispDir) dispDir.innerText = e.target.value;
-});
-document.getElementById('inputObra').addEventListener('input', (e) => {
-    document.getElementById('dispObra').innerText = e.target.value;
-});
