@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inputFecha').valueAsDate = new Date();
     document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
-    // === PROVEEDORES + CLASES ===
+    // === PROVEEDORES ===
     fetch('/data/proveedores.csv')
         .then(r => r.text())
         .then(csv => {
@@ -22,13 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (clase && razon) data[clase] = { razon, rut, dir };
             }
 
-            // Dropdown Razón Social
+            // Dropdown RAZÓN SOCIAL
             const selProv = document.getElementById('inputProveedor');
             selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
-            Object.keys(data).sort().forEach(k => {
+            Object.keys(data).sort().forEach(clase => {
                 const opt = document.createElement('option');
-                opt.value = k;
-                opt.textContent = data[k].razon;
+                opt.value = clase;
+                opt.textContent = data[clase].razon;   // ← muestra Razón Social
                 selProv.appendChild(opt);
             });
             selProv.onchange = () => {
@@ -42,13 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // Dropdown Clases (ítems)
+            // Dropdown CLASE (para ítems)
             const selClase = document.getElementById('newClase');
             selClase.innerHTML = '<option value="">Clase</option>';
-            Object.keys(data).sort().forEach(k => {
+            Object.keys(data).sort().forEach(clase => {
                 const opt = document.createElement('option');
-                opt.value = k;
-                opt.textContent = k;
+                opt.value = clase;
+                opt.textContent = clase;   // ← muestra solo la Clase
                 selClase.appendChild(opt);
             });
         });
@@ -60,17 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
             const selObra = document.getElementById('inputObraSelect');
             selObra.innerHTML = '<option value="">Selecciona la obra...</option>';
-
             for (let i = 1; i < lineas.length; i++) {
                 const nombre = lineas[i].split(',')[0].replace(/^"|"$/g, '').trim();
-                if (nombre && !nombre.includes('Obras')) {
+                if (nombre && nombre !== "Obras") {
                     const opt = document.createElement('option');
                     opt.value = nombre;
                     opt.textContent = nombre;
                     selObra.appendChild(opt);
                 }
             }
-
             selObra.onchange = () => {
                 const obra = selObra.value;
                 document.getElementById('inputObra').value = obra;
@@ -79,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 });
 
-// ÍTEMS Y TABLA (sin cambios)
+// Ítems y tabla (igual)
 let items = [];
 function agregarItem() {
     const clase = document.getElementById('newClase').value;
