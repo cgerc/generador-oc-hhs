@@ -18,41 +18,33 @@
 
     <div class="control-panel no-print">
         <h2>Datos de la OC</h2>
-        <select id="inputObraSelect">
-            <option value="">Selecciona la obra</option>
-        </select>
-
-        <select id="inputProveedor">
-            <option value="" disabled selected>Selecciona Razón Social</option>
-        </select>
-
+        <select id="inputObraSelect"><option value="">Selecciona la obra</option></select>
+        <select id="inputProveedor"><option value="" disabled selected>Selecciona Razón Social</option></select>
         <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly style="background:#f9f9f9;">
         <input type="text" id="inputDireccion" placeholder="Dirección" readonly style="background:#f9f9f9;">
         <input type="date" id="inputFecha" readonly>
-
-        <select id="inputCondicionPago">
-            <option value="">Seleccione proveedor primero</option>
-        </select>
+        <select id="inputCondicionPago"><option value="">Seleccione proveedor primero</option></select>
 
         <h3>Notas al Proveedor</h3>
         <div style="margin-top: 10px;">
             <input type="text" id="nuevaNota" placeholder="Agregar nota extra (opcional)" style="width: 72%;">
-            <button onclick="agregarNota()" style="width: 25%;">+ Agregar</button>
+            <button onclick="agregarNota()">+ Agregar</button>
         </div>
         <div id="listaNotas" style="margin-top: 8px; font-size: 14px; color: #333; max-height: 100px; overflow-y: auto;"></div>
 
         <h3>Ítems</h3>
         <div id="items-form">
-           <select id="newClase">
-                <option value="" disabled selected>Clase</option>
-            </select>
+           <select id="newClase"><option value="" disabled selected>Clase</option></select>
             <input type="text" id="newDesc" placeholder="Descripción">
             <input type="number" id="newQty" placeholder="Cant." style="width: 70px;">
             <input type="number" id="newPrice" placeholder="Precio Unit.">
             <button onclick="agregarItem()">+ Agregar</button>
         </div>
         <br>
-        <button class="btn-print" onclick="window.print()">Generar y Descargar PDF</button>
+        <button class="btn-print" onclick="generarPDF()">Generar y Descargar PDF</button>
+        <p style="font-size:12px; color:#666; margin-top:10px;">
+            Próxima OC: <strong id="proximaOC">cargando...</strong>
+        </p>
     </div>
 
     <div class="page">
@@ -69,7 +61,7 @@
             </div>
             <div class="oc-box">
                 <h2>ORDEN DE COMPRA</h2>
-                <div class="oc-number">N° <span id="ocNum">001</span></div>
+                <div class="oc-number">N° <span id="ocNum">000</span></div>
                 <p>Fecha: <span id="dispFecha"></span></p>
             </div>
         </header>
@@ -129,17 +121,56 @@
         </footer>
     </div>
 
+    <!-- Librería para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <script>
         function formatearMoneda(n) {
             return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n);
         }
 
+        // === NÚMERO DE OC INCREMENTAL ===
+        const KEY_OC = 'ultimaOC_HHS';
+        let numeroActual = parseInt(localStorage.getItem(KEY_OC) || '1');  // Cambia '1' por tu número inicial
+
+        function actualizarNumeroOC() {
+            const padded = String(numeroActual).padStart(4, '0');
+            document.getElementById('ocNum').textContent = padded;
+            document.getElementById('proximaOC').textContent = String(numeroActual + 1).padStart(4, '0');
+        }
+
+        function generarPDF() {
+            const obra = document.getElementById('dispObra').textContent.trim() || 'Sin Obra';
+            const numeroOC = document.getElementById('ocNum').textContent;
+
+            const nombreArchivo = `${obra} , OC N°${numeroOC}.pdf`;
+
+            const element = document.querySelector('.page');
+
+            const opt = {
+                margin:       0.5,
+                filename:     nombreArchivo,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Después de guardar, incrementamos el número
+                numeroActual++;
+                localStorage.setItem(KEY_OC, numeroActual);
+                actualizarNumeroOC();
+            });
+        }
+
+        // Inicializar número
+        actualizarNumeroOC();
+
         document.addEventListener('DOMContentLoaded', () => {
-            // Fecha actual
             document.getElementById('inputFecha').valueAsDate = new Date();
             document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
-            // === PROVEEDORES + CONDICIÓN DE PAGO ===
+            // PROVEEDORES
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
                 .then(r => r.text())
                 .then(csv => {
@@ -153,12 +184,9 @@
                         const condicionPago = c[2] || 'Contado';
                         const rut = c[3] || '';
                         const dir = c[4] || '';
-                        if (clase && razon) {
-                            data[clase] = { razon, condicionPago, rut, dir };
-                        }
+                        if (clase && razon) data[clase] = { razon, condicionPago, rut, dir };
                     }
 
-                    // Llenar selector de proveedores
                     const selProv = document.getElementById('inputProveedor');
                     selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
                     Object.keys(data).sort().forEach(clase => {
@@ -168,7 +196,6 @@
                         selProv.appendChild(opt);
                     });
 
-                    // Llenar selector de Clase para ítems (una sola vez)
                     const selClase = document.getElementById('newClase');
                     selClase.innerHTML = '<option value="">Clase</option>';
                     Object.keys(data).sort().forEach(clase => {
@@ -178,38 +205,27 @@
                         selClase.appendChild(opt);
                     });
 
-                    // === AL SELECCIONAR PROVEEDOR ===
                     selProv.onchange = () => {
-                        const seleccionado = selProv.value;
-                        if (!seleccionado) return;
-
-                        const p = data[seleccionado];
-
-                        // Datos del proveedor
+                        const p = data[selProv.value];
+                        if (!p) return;
                         document.getElementById('dispProv').textContent = p.razon;
                         document.getElementById('inputRutProv').value = p.rut;
                         document.getElementById('inputDireccion').value = p.dir;
                         document.getElementById('dispRut').textContent = p.rut;
                         document.getElementById('dispDir').textContent = p.dir;
 
-                        // Condición de pago
                         const condicionSelect = document.getElementById('inputCondicionPago');
-                        condicionSelect.innerHTML = `
-                            <option value="Contado">Contado</option>
-                            <option value="Crédito">Crédito</option>
-                        `;
+                        condicionSelect.innerHTML = `<option value="Contado">Contado</option><option value="Crédito">Crédito</option>`;
                         condicionSelect.value = p.condicionPago;
                         document.getElementById('dispCondicionPago').textContent = p.condicionPago;
 
-                        // Permitir cambiar manualmente
                         condicionSelect.onchange = () => {
                             document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
                         };
                     };
-                })
-                .catch(err => console.error("Error cargando proveedores:", err));
+                });
 
-            // === OBRAS ===
+            // OBRAS
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
                 .then(r => r.text())
                 .then(csv => {
@@ -231,7 +247,7 @@
                 });
         });
 
-        // === ÍTEMS Y TABLA ===
+        // ÍTEMS Y NOTAS
         let items = [];
         function agregarItem() {
             const clase = document.getElementById('newClase').value;
@@ -260,20 +276,16 @@
             document.getElementById('totalFinal').textContent = formatearMoneda(neto + iva);
         }
 
-        // === NOTAS EXTRA ===
         let notasExtra = [];
         function agregarNota() {
-            const input = document.getElementById('nuevaNota');
-            const texto = input.value.trim();
+            const texto = document.getElementById('nuevaNota').value.trim();
             if (!texto) return;
             notasExtra.push("• " + texto);
-            input.value = "";
+            document.getElementById('nuevaNota').value = "";
             document.getElementById('listaNotas').innerHTML = notasExtra.join('<br>');
             document.getElementById('notasExtra').innerHTML = notasExtra.join('<br>');
         }
-        document.getElementById('nuevaNota').addEventListener('keypress', e => {
-            if (e.key === 'Enter') agregarNota();
-        });
+        document.getElementById('nuevaNota').addEventListener('keypress', e => { if (e.key === 'Enter') agregarNota(); });
     </script>
 </body>
 </html>
