@@ -30,8 +30,8 @@
         <input type="date" id="inputFecha" readonly>
 
         <!-- NUEVO DROPDOWN DE CONDICIÓN DE PAGO (se llena automáticamente) -->
-        <select id="inputCondicionPago" style="width:100%; padding:8px; margin:8px 0;" disabled>
-            <option value="">Cargando condición...</option>
+        <select id="inputCondicionPago" style="width:100%; padding:8px; margin:8px 0;">
+            <option value="">Condición de pago</option>
         </select>
 
         <h3>Notas al Proveedor</h3>
@@ -170,20 +170,19 @@
 
                     // Al seleccionar proveedor → cargar TODOS los datos incluyendo condición de pago
                     selProv.onchange = () => {
-                        const p = data[selProv.value];
-                        if (p) {
-                            document.getElementById('dispProv').textContent = p.razon;
-                            document.getElementById('inputRutProv').value = p.rut;
-                            document.getElementById('inputDireccion').value = p.dir;
-                            document.getElementById('dispRut').textContent = p.rut;
-                            document.getElementById('dispDir').textContent = p.dir;
-
-                            // Condición de pago automática
+                                                
                             const condicionSelect = document.getElementById('inputCondicionPago');
-                            condicionSelect.innerHTML = `<option value="${p.condicionPago}" selected>${p.condicionPago}</option>`;
-                            document.getElementById('dispCondicionPago').textContent = p.condicionPago;
-                        }
-                    };
+                            condicionSelect.innerHTML = `
+                                <option value="Contado">Contado</option>
+                                <option value="Crédito">Crédito</option>
+                            `;
+                            condicionSelect.value = p.condicionPago || "Contado";  // selecciona la del Excel
+                            document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
+
+                            // Permite cambiar manualmente después
+                            condicionSelect.onchange = () => {
+                                document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
+                            };
 
                     // Llenar selector de Clase para ítems
                     const selClase = document.getElementById('newClase');
