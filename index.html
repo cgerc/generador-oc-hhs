@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <title>Generador de Orden de Compra - Hard Hat Solutions</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Pequeño estilo inline para que funcione aunque no tengas styles.css */
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+        .control-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; float: left; margin-right: 20px; }
+        .page { background: white; padding: 30px; border: 1px solid #ddd; max-width: 800px; margin-top: 20px; }
+        @media print { .no-print { display: none; } .page { margin: 0; } }
+        button, select, input { margin: 5px 0; }
+        .btn-print { background: #0066cc; color: white; padding: 12px 20px; border: none; cursor: pointer; font-size: 16px; }
+        .btn-print:hover { background: #0055aa; }
+    </style>
 </head>
 <body>
 
@@ -18,13 +28,13 @@
         <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly style="background:#f9f9f9;">
         <input type="text" id="inputDireccion" placeholder="Dirección" readonly style="background:#f9f9f9;">
         <input type="date" id="inputFecha" readonly>
-        <select id="inputCondicionPago" style="width: 100%; padding:8px; margin-bottom: 8px;">
-            <option value="">Condición de pago</option>
+
+        <!-- NUEVO DROPDOWN DE CONDICIÓN DE PAGO (se llena automáticamente) -->
+        <select id="inputCondicionPago" style="width:100%; padding:8px; margin:8px 0;" disabled>
+            <option value="">Cargando condición...</option>
         </select>
 
         <h3>Notas al Proveedor</h3>
-       
-        <!-- NOTAS EXTRA CON BOTÓN -->
         <div style="margin-top: 10px;">
             <input type="text" id="nuevaNota" placeholder="Agregar nota extra (opcional)" style="width: 75%; padding: 8px;">
             <button onclick="agregarNota()" style="padding: 8px 12px;">+ Agregar</button>
@@ -72,7 +82,7 @@
             </div>
             <div class="box">
                 <strong>Obra:</strong> <span id="dispObra"></span><br>
-                <strong>Condición de Pago:</strong> Contado<br>
+                <strong>Condición de Pago:</strong> <span id="dispCondicionPago">–</span><br>
                 <strong>Moneda:</strong> Peso Chileno
             </div>
         </section>
@@ -119,17 +129,17 @@
         </footer>
     </div>
 
-    <!-- TODO EL JAVASCRIPT AQUÍ (funciona en Vercel, Netlify, GitHub Pages, donde sea) -->
     <script>
         function formatearMoneda(n) {
             return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Fecha actual
             document.getElementById('inputFecha').valueAsDate = new Date();
             document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
-            // === PROVEEDORES ===
+            // === PROVEEDORES + CONDICIÓN DE PAGO ===
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
                 .then(r => r.text())
                 .then(csv => {
@@ -140,11 +150,15 @@
                         const c = lineas[i].split(',').map(x => x.replace(/^"|"$/g, '').trim());
                         const clase = c[0];
                         const razon = c[1];
-                        const rut = c[2] || '';
-                        const dir = c[3] || '';
-                        if (clase && razon) data[clase] = { razon, rut, dir };
+                        const condicionPago = c[2] || 'Contado';  // ← COLUMNA C = Condición de pago
+                        const rut = c[3] || '';
+                        const dir = c[4] || '';
+                        if (clase && razon) {
+                            data[clase] = { razon, condicionPago, rut, dir };
+                        }
                     }
 
+                    // Llenar selector de proveedores
                     const selProv = document.getElementById('inputProveedor');
                     selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
                     Object.keys(data).sort().forEach(clase => {
@@ -153,6 +167,8 @@
                         opt.textContent = data[clase].razon;
                         selProv.appendChild(opt);
                     });
+
+                    // Al seleccionar proveedor → cargar TODOS los datos incluyendo condición de pago
                     selProv.onchange = () => {
                         const p = data[selProv.value];
                         if (p) {
@@ -161,9 +177,15 @@
                             document.getElementById('inputDireccion').value = p.dir;
                             document.getElementById('dispRut').textContent = p.rut;
                             document.getElementById('dispDir').textContent = p.dir;
+
+                            // Condición de pago automática
+                            const condicionSelect = document.getElementById('inputCondicionPago');
+                            condicionSelect.innerHTML = `<option value="${p.condicionPago}" selected>${p.condicionPago}</option>`;
+                            document.getElementById('dispCondicionPago').textContent = p.condicionPago;
                         }
                     };
 
+                    // Llenar selector de Clase para ítems
                     const selClase = document.getElementById('newClase');
                     selClase.innerHTML = '<option value="">Clase</option>';
                     Object.keys(data).sort().forEach(clase => {
@@ -191,7 +213,7 @@
                         }
                     }
                     selObra.onchange = () => {
-                        document.getElementById('dispObra').textContent = selObra.value;
+                        document.getElementById('dispObra').textContent = selObra.value || '–';
                     };
                 });
         });
@@ -203,13 +225,14 @@
             const desc = document.getElementById('newDesc').value.trim();
             const cant = parseFloat(document.getElementById('newQty').value) || 0;
             const precio = parseFloat(document.getElementById('newPrice').value) || 0;
-            if (!clase || !desc) return alert("Faltan datos");
+            if (!clase || !desc) return alert("Faltan clase o descripción");
             items.push({ clase, desc, cant, precio, total: cant * precio });
             renderizarTabla();
             document.getElementById('newDesc').value = "";
             document.getElementById('newQty').value = "";
             document.getElementById('newPrice').value = "";
         }
+
         function renderizarTabla() {
             const tbody = document.getElementById('tablaCuerpo');
             tbody.innerHTML = "";
@@ -224,7 +247,7 @@
             document.getElementById('totalFinal').textContent = formatearMoneda(neto + iva);
         }
 
-        // === NOTAS EXTRA AL PROVEEDOR ===
+        // === NOTAS EXTRA ===
         let notasExtra = [];
         function agregarNota() {
             const input = document.getElementById('nuevaNota');
