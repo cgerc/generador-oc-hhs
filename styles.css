@@ -1,6 +1,15 @@
 body { font-family: Arial, sans-serif; background: #f0f0f0; display: flex; gap: 20px; padding: 20px; }
 .no-print { display: block; }
 
+/* EVITA QUE EL PDF SE CORTE */
+.page { padding: 20px !important; box-sizing: border-box; }
+ table, tr, .totals-section, .footer-notes, .notes, .signatures, .info-grid {
+    page-break-inside: avoid !important;
+        }
+        @media print {
+     body { -webkit-print-color-adjust: exact; }
+        }
+
 /* Panel de Control */
 .control-panel { width: 300px; background: #fff; padding: 20px; border-radius: 8px; height: fit-content; }
 .control-panel input { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
