@@ -25,12 +25,12 @@
         <input type="date" id="inputFecha" readonly>
         <select id="inputCondicionPago"><option value="">Seleccione proveedor primero</option></select>
 
-        <h3>Notas al Proveedor</h3>
-        <div style="margin-top: 10px;">
-            <input type="text" id="nuevaNota" placeholder="Agregar nota extra (opcional)" style="width: 72%;">
-            <button onclick="agregarNota()" style="width: 25%;">+ Agregar</button>
-        </div>
-        <div id="listaNotas" style="margin-top: 8px; font-size: 14px; color: #333; max-height: 100px; overflow-y: auto;"></div>
+      <h3>Notas al Proveedor</h3>
+<div style="margin-top: 10px;">
+    <input type="text" id="nuevaNota" placeholder="Escriba nota y presione Enter o +Agregar" style="width: 72%;">
+    <button onclick="agregarNota()" style="width: 25%;">+ Agregar</button>
+</div>
+<!-- Aquí NO ponemos ningún div de lista → queda súper limpio -->
 
         <h3>Ítems</h3>
         <div id="items-form">
@@ -276,16 +276,25 @@
             document.getElementById('totalFinal').textContent = formatearMoneda(neto + iva);
         }
 
+               // === NOTAS AL PROVEEDOR (solo se ven en la OC) ===
         let notasExtra = [];
+
         function agregarNota() {
             const texto = document.getElementById('nuevaNota').value.trim();
             if (!texto) return;
             notasExtra.push("• " + texto);
-            document.getElementById('nuevaNota').value = "";
-            document.getElementById('listaNotas').innerHTML = notasExtra.join('<br>');
+            document.getElementById('nuevaNota').value = "";  // limpia el campo
+            // Solo actualiza la parte visible en la OC
             document.getElementById('notasExtra').innerHTML = notasExtra.join('<br>');
         }
-        document.getElementById('nuevaNota').addEventListener('keypress', e => { if (e.key === 'Enter') agregarNota(); });
+
+        // Permite agregar con Enter
+        document.getElementById('nuevaNota').addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // evita salto de línea si es textarea (por si acaso)
+                agregarNota();
+            }
+        });
     </script>
 </body>
 </html>
