@@ -30,7 +30,8 @@
     <input type="text" id="nuevaNota" placeholder="Escriba nota y presione Enter o +Agregar">
     <button onclick="agregarNota()">+ Agregar</button>
 </div>
-<!-- Aquí NO ponemos ningún div de lista → queda súper limpio -->
+<!-- Lista de notas con opción de Editar / Borrar -->
+<div id="listaNotasEditables" style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 6px; font-size: 14px;"></div>
 
         <h3>Ítems</h3>
         <div id="items-form">
@@ -277,24 +278,81 @@
         }
 
                // === NOTAS AL PROVEEDOR (solo se ven en la OC) ===
+                // === NOTAS AL PROVEEDOR - CON EDITAR Y BORRAR ===
         let notasExtra = [];
 
-        function agregarNota() {
-            const texto = document.getElementById('nuevaNota').value.trim();
-            if (!texto) return;
-            notasExtra.push("• " + texto);
-            document.getElementById('nuevaNota').value = "";  // limpia el campo
-            // Solo actualiza la parte visible en la OC
-            document.getElementById('notasExtra').innerHTML = notasExtra.join('<br>');
+        function renderizarNotas() {
+            const contenedor = document.getElementById('listaNotasEditables');
+            const contenedorOC = document.getElementById('notasExtra');
+
+            if (notasExtra.length === 0) {
+                contenedor.innerHTML = '<em style="color:#999;">Sin notas adicionales</em>';
+                contenedorOC.innerHTML = '';
+                return;
+            }
+
+            contenedor.innerHTML = '';
+            notasExtra.forEach((nota, index) => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '8px';
+                div.style.padding = '8px';
+                div.style.background = 'white';
+                div.style.borderRadius = '4px';
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+
+                div.innerHTML = `
+                    <span>${nota}</span>
+                    <div>
+                        <button onclick="editarNota(${index})" style="margin-left:8px; padding:4px 8px; font-size:12px; background:#0066cc; color:white; border:none; border-radius:3px; cursor:pointer;">Editar</button>
+                        <button onclick="borrarNota(${index})" style="margin-left:4px; padding:4px 8px; font-size:12px; background:#d9534f; color:white; border:none; border-radius:3px; cursor:pointer;">Borrar</button>
+                    </div>
+                `;
+                contenedor.appendChild(div);
+            });
+
+            // Actualiza también la OC
+            contenedorOC.innerHTML = notasExtra.join('<br>');
         }
 
-        // Permite agregar con Enter
+        function agregarNota() {
+            const input = document.getElementById('nuevaNota');
+            const texto = input.value.trim();
+            if (!texto) return;
+            notasExtra.push("• " + texto);
+            input.value = "";
+            renderizarNotas();
+        }
+
+        function editarNota(index) {
+            const nuevoTexto = prompt("Editar nota:", notasExtra[index].substring(2));
+            if (nuevoTexto === null) return; // canceló
+            if (nuevoTexto.trim() === "") {
+                borrarNota(index);
+            } else {
+                notasExtra[index] = "• " + nuevoTexto.trim();
+                renderizarNotas();
+            }
+        }
+
+        function borrarNota(index) {
+            if (confirm("¿Borrar esta nota?")) {
+                notasExtra.splice(index, 1);
+                renderizarNotas();
+            }
+        }
+
+        // Enter para agregar
         document.getElementById('nuevaNota').addEventListener('keypress', e => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // evita salto de línea si es textarea (por si acaso)
+                e.preventDefault();
                 agregarNota();
             }
         });
+
+        // Inicializar
+        renderizarNotas(); 
     </script>
 </body>
 </html>
