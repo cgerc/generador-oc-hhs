@@ -5,13 +5,12 @@
     <title>Generador de Orden de Compra - Hard Hat Solutions</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Pequeño estilo inline para que funcione aunque no tengas styles.css */
         body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
         .control-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; float: left; margin-right: 20px; }
         .page { background: white; padding: 30px; border: 1px solid #ddd; max-width: 800px; margin-top: 20px; }
         @media print { .no-print { display: none; } .page { margin: 0; } }
-        button, select, input { margin: 5px 0; }
-        .btn-print { background: #0066cc; color: white; padding: 12px 20px; border: none; cursor: pointer; font-size: 16px; }
+        button, select, input { margin: 5px 0; width: 100%; padding: 8px; box-sizing: border-box; }
+        .btn-print { background: #0066cc; color: white; padding: 12px 20px; border: none; cursor: pointer; font-size: 16px; width: auto; }
         .btn-print:hover { background: #0055aa; }
     </style>
 </head>
@@ -19,31 +18,32 @@
 
     <div class="control-panel no-print">
         <h2>Datos de la OC</h2>
-        <select id="inputObraSelect" style="width:100%; padding:8px; margin-bottom:8px;">
+        <select id="inputObraSelect">
             <option value="">Selecciona la obra</option>
         </select>
-        <select id="inputProveedor" style="width:100%; padding:8px; margin-bottom:8px;">
+
+        <select id="inputProveedor">
             <option value="" disabled selected>Selecciona Razón Social</option>
         </select>
+
         <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly style="background:#f9f9f9;">
         <input type="text" id="inputDireccion" placeholder="Dirección" readonly style="background:#f9f9f9;">
         <input type="date" id="inputFecha" readonly>
 
-        <!-- NUEVO DROPDOWN DE CONDICIÓN DE PAGO (se llena automáticamente) -->
-        <select id="inputCondicionPago" style="width:100%; padding:8px; margin:8px 0;">
-            <option value="">Condición de pago</option>
+        <select id="inputCondicionPago">
+            <option value="">Seleccione proveedor primero</option>
         </select>
 
         <h3>Notas al Proveedor</h3>
         <div style="margin-top: 10px;">
-            <input type="text" id="nuevaNota" placeholder="Agregar nota extra (opcional)" style="width: 75%; padding: 8px;">
-            <button onclick="agregarNota()" style="padding: 8px 12px;">+ Agregar</button>
+            <input type="text" id="nuevaNota" placeholder="Agregar nota extra (opcional)" style="width: 72%;">
+            <button onclick="agregarNota()" style="width: 25%;">+ Agregar</button>
         </div>
         <div id="listaNotas" style="margin-top: 8px; font-size: 14px; color: #333; max-height: 100px; overflow-y: auto;"></div>
 
         <h3>Ítems</h3>
         <div id="items-form">
-           <select id="newClase" style="width:100%; padding:8px; margin-bottom:8px;">
+           <select id="newClase">
                 <option value="" disabled selected>Clase</option>
             </select>
             <input type="text" id="newDesc" placeholder="Descripción">
@@ -81,7 +81,7 @@
                 <strong>Dirección:</strong> <span id="dispDir"></span>
             </div>
             <div class="box">
-                <strong>Obra:</strong> <span id="dispObra"></span><br>
+                <strong>Obra:</strong> <span id="dispObra">–</span><br>
                 <strong>Condición de Pago:</strong> <span id="dispCondicionPago">–</span><br>
                 <strong>Moneda:</strong> Peso Chileno
             </div>
@@ -150,7 +150,7 @@
                         const c = lineas[i].split(',').map(x => x.replace(/^"|"$/g, '').trim());
                         const clase = c[0];
                         const razon = c[1];
-                        const condicionPago = c[2] || 'Contado';  // ← COLUMNA C = Condición de pago
+                        const condicionPago = c[2] || 'Contado';
                         const rut = c[3] || '';
                         const dir = c[4] || '';
                         if (clase && razon) {
@@ -168,23 +168,7 @@
                         selProv.appendChild(opt);
                     });
 
-                    // Al seleccionar proveedor → cargar TODOS los datos incluyendo condición de pago
-                    selProv.onchange = () => {
-                                                
-                            const condicionSelect = document.getElementById('inputCondicionPago');
-                            condicionSelect.innerHTML = `
-                                <option value="Contado">Contado</option>
-                                <option value="Crédito">Crédito</option>
-                            `;
-                            condicionSelect.value = p.condicionPago || "Contado";  // selecciona la del Excel
-                            document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
-
-                            // Permite cambiar manualmente después
-                            condicionSelect.onchange = () => {
-                                document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
-                            };
-
-                    // Llenar selector de Clase para ítems
+                    // Llenar selector de Clase para ítems (una sola vez)
                     const selClase = document.getElementById('newClase');
                     selClase.innerHTML = '<option value="">Clase</option>';
                     Object.keys(data).sort().forEach(clase => {
@@ -193,7 +177,37 @@
                         opt.textContent = clase;
                         selClase.appendChild(opt);
                     });
-                });
+
+                    // === AL SELECCIONAR PROVEEDOR ===
+                    selProv.onchange = () => {
+                        const seleccionado = selProv.value;
+                        if (!seleccionado) return;
+
+                        const p = data[seleccionado];
+
+                        // Datos del proveedor
+                        document.getElementById('dispProv').textContent = p.razon;
+                        document.getElementById('inputRutProv').value = p.rut;
+                        document.getElementById('inputDireccion').value = p.dir;
+                        document.getElementById('dispRut').textContent = p.rut;
+                        document.getElementById('dispDir').textContent = p.dir;
+
+                        // Condición de pago
+                        const condicionSelect = document.getElementById('inputCondicionPago');
+                        condicionSelect.innerHTML = `
+                            <option value="Contado">Contado</option>
+                            <option value="Crédito">Crédito</option>
+                        `;
+                        condicionSelect.value = p.condicionPago;
+                        document.getElementById('dispCondicionPago').textContent = p.condicionPago;
+
+                        // Permitir cambiar manualmente
+                        condicionSelect.onchange = () => {
+                            document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
+                        };
+                    };
+                })
+                .catch(err => console.error("Error cargando proveedores:", err));
 
             // === OBRAS ===
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
