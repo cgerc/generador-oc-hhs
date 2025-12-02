@@ -2,78 +2,151 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Generador de Orden de Compra - Hard Hat Solutions</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador OC - Hard Hat Solutions</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-        .control-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; float: left; margin-right: 20px; }
-        .page { background: white; padding: 20px; border: 1px solid #ddd; max-width: 800px; margin-top: 20px; box-sizing: border-box; }
-        @media print { .no-print { display: none; } .page { margin: 0; padding: 20px; } }
-        button, select, input { margin: 5px 0; width: 100%; padding: 8px; box-sizing: border-box; }
-        .btn-print { background: #0066cc; color: white; padding: 12px 30px; border: none; cursor: pointer; font-size: 16px; border-radius: 6px; }
-        .btn-print:hover { background: #0055aa; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            min-height: 100vh;
+        }
+        .control-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 420px;
+            max-width: 100%;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        .page {
+            background: white;
+            padding: 50px;
+            border-radius: 16px;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+            flex: 1;
+            min-width: 650px;
+            max-width: 950px;
+            border: 1px solid #e2e8f0;
+        }
+        @media (max-width: 1200px) {
+            body { flex-direction: column; align-items: center; }
+            .control-panel, .page { width: 100%; max-width: 800px; min-width: auto; }
+            .control-panel { position: static; }
+        }
+        h2 { color: #0066cc; margin-bottom: 20px; font-size: 24px; }
+        h3 { color: #0066cc; margin: 25px 0 15px; font-size: 18px; }
+        select, input[type=text], input[type=date], input[type=number] {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background: #0055aa; }
+        .btn-print {
+            width: 100%;
+            padding: 20px;
+            font-size: 22px;
+            margin-top: 40px;
+        }
+        .info-grid {
+            display: flex;
+            gap: 25px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        .info-block {
+            flex: 1;
+            min-width: 300px;
+            background: #f8fbff;
+            padding: 22px;
+            border-radius: 12px;
+            border-left: 4px solid #0066cc;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 35px 0;
+            font-size: 15px;
+        }
+        th {
+            background: #0066cc;
+            color: white;
+            padding: 16px;
+            text-align: left;
+        }
+        td { padding: 14px; border-bottom: 1px solid #eee; }
+        .totals-box {
+            display: inline-block;
+            background: #f0f7ff;
+            padding: 30px;
+            border-radius: 14px;
+            border: 2px solid #0066cc;
+            min-width: 360px;
+        }
+        .oc-number span { font-size: 40px; color: #0066cc; font-weight: bold; }
 
-        /* EVITA QUE EL PDF SE CORTE */
-        table, tr, .totals-section, .footer-notes, .notes, .signatures, .info-grid, .oc-box {
-            page-break-inside: avoid !important;
+        @media print {
+            .no-print { display: none !important; }
+            body, .page { background: white !important; margin: 0 !important; padding: 40px !important; box-shadow: none !important; }
         }
     </style>
 </head>
 <body>
 
-    <div class="control-panel no-print">
-        <h2>Datos de la OC</h2>
-        <select id="inputObraSelect"><option value="">Selecciona la obra</option></select>
-        <select id="inputProveedor"><option value="" disabled selected>Selecciona Razón Social</option></select>
-        <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly style="background:#f9f9f9;">
-        <input type="text" id="inputDireccion" placeholder="Dirección" readonly style="background:#f9f9f9;">
-        <input type="date" id="inputFecha" readonly>
-        <select id="inputCondicionPago"><option value="">Seleccione proveedor primero</option></select>
+<div class="control-panel no-print">
+    <h2>Datos de la OC</h2>
+    <select id="inputObraSelect"><option value="">Selecciona la obra</option></select>
+    <select id="inputProveedor"><option value="" disabled selected>Selecciona Razón Social</option></select>
+    <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly>
+    <input type="text" id="inputDireccion" placeholder="Dirección" readonly>
+    <input type="date" id="inputFecha" readonly>
+    <select id="inputCondicionPago"><option value="">Seleccione proveedor primero</option></select>
 
-        <h3>Notas al Proveedor</h3>
-        <div style="margin-top: 10px;">
-            <input type="text" id="nuevaNota" placeholder="Escriba nota y presione Enter o +Agregar" style="width: 70%;">
-            <button onclick="agregarNota()" style="width: 28%;">+ Agregar</button>
-        </div>
-        <div id="listaNotasEditables" style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 6px; font-size: 14px;"></div>
+    <h3>Notas al Proveedor</h3>
+    <div style="display:flex; gap:10px;">
+        <input type="text" id="nuevaNota" placeholder="Escriba nota y presione Enter" style="flex:1;">
+        <button onclick="agregarNota()">+ Agregar</button>
+    </div>
+    <div id="listaNotasEditables" style="margin-top:15px; max-height:200px; overflow-y:auto; background:#f9f9f9; padding:15px; border-radius:12px;"></div>
 
-        <h3>Ítems</h3>
-        <div id="items-form">
-           <select id="newClase"><option value="" disabled selected>Clase</option></select>
-            <input type="text" id="newDesc" placeholder="Descripción">
-            <input type="number" id="newQty" placeholder="Cant." style="width: 70px;">
-            <input type="number" id="newPrice" placeholder="Precio Unit.">
-            <button onclick="agregarItem()">+ Agregar</button>
-        </div>
-
-        <div style="text-align: center; margin-top: 30px;">
-            <button class="btn-print" onclick="generarPDF()">Generar y Descargar PDF</button>
-            <p style="font-size:15px; color:#666; margin:15px 0 0 0;">
-                Próxima OC: <strong id="proximaOC">cargando...</strong>
-            </p>
-        </div>
+    <h3>Ítems</h3>
+    <select id="newClase"><option value="" disabled selected>Clase</option></select>
+    <input type="text" id="newDesc" placeholder="Descripción">
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <input type="number" id="newQty" placeholder="Cant." style="width:120px;">
+        <input type="number" id="newPrice" placeholder="Precio Unit." style="flex:1;">
+        <button onclick="agregarItem()">+ Agregar</button>
     </div>
 
-    <div class="page">
-        <header>
-            <div class="logo-section" style="display:flex; align-items:center; justify-content:space-between;">
-                <img src="logo casi.jpg" alt="Hard Hat Logo" style="width: 120px;">
-                <div class="company-info" style="text-align:left;">
-                    <h3>HARD HAT SOLUTIONS SPA</h3>
-                    <p>Giro: ESTUDIO, GESTIÓN, ADMINISTRACIÓN DE OBRAS DE CONSTRUCCIÓN</p>
-                    <p>RUT: 78.293.581-K</p>
-                    <p>Dr. Manuel Barros Borgoño 71, Of 1105, Providencia</p>
-                    <p>Contacto: administracion@hhs.cl | +56 9 6254 3173</p>
-                </div>
-            </div>
-            <div class="oc-box" style="text-align:right; margin-top:20px;">
-                <h2>ORDEN DE COMPRA</h2>
-                <div class="oc-number">N° <span id="ocNum" style="font-size:28px; font-weight:bold; color:#0066cc;">0001</span></div>
-                <p>Fecha: <span id="dispFecha"></span></p>
-            </div>
-        </header>
+    <div style="text-align:center; margin-top:50px;">
+        <button class="btn-print" onclick="generarPDF()">Generar y Descargar PDF</button>
+        <p style="margin-top:20px; font-size:18px; color:#555;">
+            Próxima OC: <strong id="proximaOC" style="color:#0066cc; font-size:24px;">0002</strong>
+        </p>
+    </div>
+</div>
 
-        <!-- BLOQUES 100% IGUALES Y SIMÉTRICOS -->
-        <section class="info-grid" style="display:flex; gap:20px; margin:30px 0;">
-            <div style="background:#f9f9f9; padding:15px; border-radius:8px; flex:1; font-size:15px; line-height:1.6;">
-                <strong>Señor(es):</strong> <span id="dispProv"></span><br>
-                <strong>RUT:</strong> <span
+<div class="page">
+    <header style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:40px
