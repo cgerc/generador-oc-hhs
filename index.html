@@ -126,7 +126,7 @@
 </div>
 
 <script>
-    // Número OC persistent
+    // Número OC persistente
     let numeroActual = parseInt(localStorage.getItem('oc_hhs') || '1');
     document.getElementById('ocNum').textContent = String(numeroActual).padStart(4, '0');
     document.getElementById('dispFecha').textContent = new Date().toLocaleDateString('es-CL');
@@ -148,7 +148,7 @@
         });
     }
 
-    // PRUEBA RÁPIDA 
+    // PRUEBA RÁPIDA (para que veas que ya no se corta)
     document.getElementById('dispProv').textContent = 'EXTINTORES CHILE SPA';
     document.getElementById('dispRut').textContent = '76.335.833-K';
     document.getElementById('dispDir').textContent = 'Nataniel Cox #1664';
@@ -163,7 +163,7 @@
     document.getElementById('totalIva').textContent = '$19.380';
     document.getElementById('totalFinal').textContent = '$121.380';
 
-    
+    // Haz clic aquí para generar el PDF perfecto
     generarPDF();
 </script>
 </body>
