@@ -137,7 +137,7 @@
             filename:     `${document.getElementById('dispObra').textContent || 'OC'} N°${String(numeroActual).padStart(4,'0')}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 3, useCORS: true, letterRendering: true, width: 794, height: 1123, windowWidth: 794 },
-            jsPDF:        { unit: 'px', format: [2480, 3508], orientation: 'portrait' },
+            jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' },
             pagebreak:    { mode: ['avoid-all'] }
         };
 
