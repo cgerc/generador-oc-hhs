@@ -3,279 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador OC - Hard Hat Solutions</title>
+    <title>OC Hard Hat Solutions</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" integrity="sha512-MpDF9e3Eh5llHbx8nLZf3oUVibopn5SevenQ0iFGSoy9+Z8ioaD0xdyb40z4v/gQ4HUSeTRfobF9Z8uLE4X5g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; background: #f5f7fa; padding: 20px; display: flex; gap: 30px; flex-wrap: wrap; }
-        .control-panel { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 420px; max-width: 100%; position: sticky; top: 20px; height: fit-content; }
-        .page { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 12px 35px rgba(0,0,0,0.12); flex: 1; min-width: 650px; max-width: 950px; }
-        @media (max-width: 1200px) { body { flex-direction: column; align-items: center; } .control-panel, .page { width: 100%; max-width: 800px; min-width: auto; } .control-panel { position: static; } }
-        h2, h3 { color: #0066cc; margin-bottom: 20px; }
-        select, input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; }
-        button { background: #0066cc; color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0055aa; }
-        .btn-print { width: 100%; padding: 20px; font-size: 22px; margin-top: 40px; }
-        @media print { .no-print { display: none !important; } body, .page { background: white !important; margin: 0 !important; padding: 30px !important; box-shadow: none !important; } }
+        @page { margin: 0; size: A4; }
+        body { margin:0; padding:0; font-family: Arial, sans-serif; background:#f0f0f0; }
+        .page { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; padding: 15mm 12mm; box-sizing: border-box; }
+        .no-print { display: none; }
+
+        /* ENCABEZADO */
+        .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10mm; border-bottom: 2px solid #0066cc; margin-bottom: 12mm; }
+        .header img { width: 95px; }
+        .header .company { font-size: 13px; line-height: 1.5; color: #333; }
+        .header .company strong { font-size: 18px; color: #0066cc; display: block; margin-bottom: 4px; }
+        .header .right { text-align: right; }
+        .header .right h1 { color: #0066cc; font-size: 34px; margin: 0 0 5px 0; font-weight: bold; }
+        .header .right .num { color: #d32f2f; font-size: 52px; font-weight: bold; }
+        .header .right .fecha { font-size: 17px; margin-top: 6px; }
+
+        /* BLOQUES PROVEEDOR Y OBRA */
+        .blocks { display: flex; gap: 15mm; margin: 12mm 0; flex-wrap: wrap; }
+        .block { flex: 1; min-width: 280px; background: #f8fbff; padding: 15px 18px; border-left: 6px solid #0066cc; border-radius: 0 10px 10px 0; font-size: 15.5px; line-height: 1.7; }
+
+        /* TABLA */
+        table { width: 100%; border-collapse: collapse; margin: 15mm 0; font-size: 15px; }
+        th { background: #0066cc; color: white; padding: 11px 8px; text-align: center; }
+        td { padding: 11px 8px; border-bottom: 1px solid #ddd; }
+        td:nth-child(1), th:nth-child(1) { width: 12%; }
+        td:nth-child(2), th:nth-child(2) { width: 42%; text-align: left; }
+        td:nth-child(3), th:nth-child(3) { width: 10%; }
+        td:nth-child(4), th:nth-child(4) { width: 10%; text-align: center; }
+        td:nth-child(5), th:nth-child(5) { text-align: right; }
+        td:nth-child(6), th:nth-child(6) { text-align: right; }
+
+        /* TOTALES */
+        .totals { float: right; background: #f0f7ff; padding: 22px 32px; border: 3px solid #0066cc; border-radius: 12px; min-width: 320px; margin-top: 20mm; }
+        .totals div { margin: 10px 0; font-size: 18px; text-align: right; white-space: nowrap; }
+        .totals .total-line { padding-top: 15px; border-top: 4px solid #0066cc; font-size: 18px; margin-top: 15px; }
+        .totals .total-line strong { font-size: 20px; }
+
+        /* NOTAS Y FIRMA */
+        .notes { margin-top: 25mm; font-size: 14.5px; line-height: 1.7; }
+        .signature { margin-top: 30mm; text-align: center; }
+        .signature div { display: inline-block; border-top: 3px solid #000; padding-top: 12px; width: 340px; }
+        .signature strong { font-size: 19px; display: block; }
     </style>
 </head>
 <body>
 
-<div class="control-panel no-print">
-    <h2>Datos de la OC</h2>
-    <select id="inputObraSelect"><option value="">Cargando obras...</option></select>
-    <select id="inputProveedor"><option value="" disabled selected>Cargando proveedores...</option></select>
-    <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly>
-    <input type="text" id="inputDireccion" placeholder="Dirección" readonly>
-    <input type="date" id="inputFecha" readonly>
-    <select id="inputCondicionPago"><option value="">Seleccione proveedor primero</option></select>
-
-    <h3>Notas al Proveedor</h3>
-    <div style="display:flex; gap:10px;">
-        <input type="text" id="nuevaNota" placeholder="Escriba nota y presione Enter" style="flex:1;">
-        <button onclick="agregarNota()">+ Agregar</button>
-    </div>
-    <div id="listaNotasEditables" style="margin-top:15px; max-height:200px; overflow-y:auto; background:#f9f9f9; padding:15px; border-radius:12px;"></div>
-
-    <h3>Ítems</h3>
-    <select id="newClase"><option value="" disabled selected>Cargando clases...</option></select>
-    <input type="text" id="newDesc" placeholder="Descripción">
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <input type="number" id="newQty" placeholder="Cant." style="width:120px;">
-        <input type="number" id="newPrice" placeholder="Precio Unit." style="flex:1;">
-        <button onclick="agregarItem()">+ Agregar</button>
-    </div>
-
-    <div style="text-align:center; margin-top:50px;">
-        <button class="btn-print" onclick="generarPDF()">Generar y Descargar PDF</button>
-        <p style="margin-top:20px;">Próxima OC: <strong id="proximaOC" style="color:#0066cc; font-size:24px;">0002</strong></p>
-    </div>
-</div>
-
 <div class="page">
-
-    <!-- ENCABEZADO EXACTAMENTE COMO TU FOTO -->
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px; padding-bottom:15px; border-bottom:2px solid #0066cc;">
-        <div style="display:flex; align-items:flex-start; gap:20px;">
-            <img src="logo casi.jpg" alt="Logo" style="width:110px; height:auto;" onerror="this.style.display='none'">
-            <div style="font-size:14px; line-height:1.5; color:#333;">
-                <strong style="font-size:20px; color:#0066cc; display:block; margin-bottom:4px;">HARD HAT SOLUTIONS SPA</strong>
+    <!-- ENCABEZADO -->
+    <div class="header">
+        <div style="display:flex; align-items:flex-start; gap:18px;">
+            <img src="logo casi.jpg" alt="Logo" onerror="this.style.display='none'">
+            <div class="company">
+                <strong>HARD HAT SOLUTIONS SPA</strong>
                 Giro: CONSTRUCCIÓN<br>
                 RUT: 78.293.581-K<br>
                 Dr. Manuel Barros Borgoño 71, Of 1105, Providencia<br>
-                Contacto: administracion@hhs.cl | +56 9 6254 3173
+                administracion@hhs.cl | +56 9 6254 3173
             </div>
         </div>
-        <div style="text-align:right;">
-            <h1 style="color:#0066cc; font-size:36px; margin:0; font-weight:bold;">ORDEN DE COMPRA</h1>
-            <div style="margin-top:8px;">
-                <span style="color:#d32f2f; font-size:48px; font-weight:bold;">N° </span>
-                <span id="ocNum" style="color:#d32f2f; font-size:48px; font-weight:bold;">0001</span>
-            </div>
-            <div style="margin-top:8px; font-size:18px; color:#333;">
-                Fecha: <span id="dispFecha" style="font-weight:bold;"></span>
-            </div>
+        <div class="right">
+            <h1>ORDEN DE COMPRA</h1>
+            <div><span class="num">N° </span><span id="ocNum" class="num">0002</span></div>
+            <div class="fecha">Fecha: <span id="dispFecha"></span></div>
         </div>
     </div>
 
-    <!-- PROVEEDOR Y OBRA (con barra azul izquierda) -->
-    <div style="display:flex; gap:30px; margin:40px 0; flex-wrap:wrap;">
-        <div style="flex:1; min-width:300px; background:#f8fbff; padding:20px; border-radius:0 12px 12px 0; border-left:6px solid #0066cc; font-size:16px; line-height:1.8;">
+    <!-- PROVEEDOR Y OBRA -->
+    <div class="blocks">
+        <div class="block">
             <strong>Señor(es):</strong> <span id="dispProv">-</span><br>
             <strong>RUT:</strong> <span id="dispRut">-</span><br>
             <strong>Dirección:</strong> <span id="dispDir">-</span>
         </div>
-        <div style="flex:1; min-width:300px; background:#f8fbff; padding:20px; border-radius:0 12px 12px 0; border-left:6px solid #0066cc; font-size:16px; line-height:1.8;">
+        <div class="block">
             <strong>Obra:</strong> <span id="dispObra">-</span><br>
             <strong>Condición de Pago:</strong> <span id="dispCondicionPago">-</span><br>
             <strong>Moneda:</strong> Peso Chileno
         </div>
     </div>
 
-    <!-- TABLA QUE NUNCA SE CORTA -->
-    <div style="margin:40px 0; overflow:hidden;">
-        <table style="width:100%; border-collapse:collapse; font-size:15px; page-break-inside:avoid;">
-            <thead>
-                <tr style="background:#0066cc; color:white;">
-                    <th style="padding:12px 8px; text-align:left;">Clase</th>
-                    <th style="padding:12px 8px; text-align:left; width:38%;">Descripción</th>
-                    <th style="padding:12px 8px; text-align:center;">Unid.</th>
-                    <th style="padding:12px 8px; text-align:center;">Cant.</th>
-                    <th style="padding:12px 8px; text-align:right;">Precio Unit.</th>
-                    <th style="padding:12px 8px; text-align:right;">Total</th>
-                </tr>
-            </thead>
-            <tbody id="tablaCuerpo"></tbody>
-        </table>
+    <!-- TABLA -->
+    <table>
+        <thead>
+            <tr>
+                <th>Clase</th>
+                <th>Descripción</th>
+                <th>Unid.</th>
+                <th>Cant.</th>
+                <th>Precio Unit.</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody id="tablaCuerpo"></tbody>
+    </table>
+
+    <!-- TOTALES -->
+    <div class="totals">
+        <div><strong>Neto:</strong> <span id="totalNeto">$0</span></div>
+        <div><strong>IVA 19%:</strong> <span id="totalIva">$0</span></div>
+        <div class="total-line"><strong>TOTAL:</strong> <span id="totalFinal" style="color:#d32f2f;">$0</span></div>
+    </div>
+    <div style="clear:both;"></div>
+
+    <!-- NOTAS -->
+    <div class="notes">
+        <strong>Notas al Proveedor:</strong><br><br>
+        • Toda facturación deberá adjuntar esta O.C.<br>
+        • No se aceptarán facturaciones con precios distintos a esta O.C.<br>
+        <span id="notasExtra"></span>
     </div>
 
-    <!-- TOTALES (mismo tamaño y que nunca se cortan) -->
-    <div style="page-break-inside:avoid; margin:50px 0;">
-        <div style="float:right; background:#f0f7ff; padding:25px 35px; border-radius:12px; border:3px solid #0066cc; min-width:340px;">
-            <div style="margin:12px 0; font-size:18px; white-space:nowrap;">
-                <strong>Neto:</strong> <span id="totalNeto">$0</span>
-            </div>
-            <div style="margin:12px 0; font-size:18px; white-space:nowrap;">
-                <strong>IVA 19%:</strong> <span id="totalIva">$0</span>
-            </div>
-            <div style="margin:20px 0 0; padding-top:15px; border-top:4px solid #0066cc; font-size:18px; white-space:nowrap;">
-                <strong>TOTAL:</strong> <span id="totalFinal" style="color:#d32f2f; font-weight:bold;">$0</span>
-            </div>
-        </div>
-        <div style="clear:both;"></div>
-    </div>
-
-    <!-- NOTAS Y FIRMA -->
-    <div style="margin-top:70px; font-size:15px; page-break-inside:avoid;">
-        <strong>Notas al Proveedor:</strong>
-        <div style="margin-top:12px; line-height:1.8;">
-            • Toda facturación deberá adjuntar esta O.C.<br>
-            • No se aceptarán facturaciones con precios distintos a esta O.C.<br>
-            <span id="notasExtra"></span>
-        </div>
-    </div>
-
-    <div style="text-align:center; margin-top:100px;">
-        <div style="display:inline-block; border-top:3px solid #000; padding-top:20px; width:340px;">
-            <strong style="font-size:20px;">Jorge Chacón</strong><br>
+    <!-- FIRMA -->
+    <div class="signature">
+        <div>
+            <strong>Jorge Chacón</strong><br>
             <span style="color:#666;">Gerente General</span>
         </div>
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-    function formatearMoneda(n) {
-        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n);
-    }
-
-    const KEY_OC = 'ultimaOC_HHS';
-    let numeroActual = parseInt(localStorage.getItem(KEY_OC) || '1');
-    function actualizarNumeroOC() {
-        const padded = String(numeroActual).padStart(4, '0');
-        document.getElementById('ocNum').textContent = padded;
-        document.getElementById('proximaOC').textContent = String(numeroActual + 1).padStart(4, '0');
-    }
-    actualizarNumeroOC();
+    // Número OC persistente
+    let numeroActual = parseInt(localStorage.getItem('oc_hhs') || '1');
+    document.getElementById('ocNum').textContent = String(numeroActual).padStart(4, '0');
+    document.getElementById('dispFecha').textContent = new Date().toLocaleDateString('es-CL');
 
     function generarPDF() {
-        const obra = document.getElementById('dispObra').textContent.trim() || 'Sin Obra';
-        const numeroOC = document.getElementById('ocNum').textContent;
+        const opt = {
+            margin:       [0, 0, 0, 0],
+            filename:     `${document.getElementById('dispObra').textContent || 'OC'} N°${String(numeroActual).padStart(4,'0')}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 3, useCORS: true, letterRendering: true, width: 794, height: 1123, windowWidth: 794 },
+            jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all'] }
+        };
 
-        html2pdf().set({
-            margin: [15, 15, 15, 15],
-            filename: `${obra} - OC N°${numeroOC}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024, width: 900 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        })
-        .from(document.querySelector('.page'))
-        .save()
-        .then(() => {
+        html2pdf().set(opt).from(document.querySelector('.page')).save().then(() => {
             numeroActual++;
-            localStorage.setItem(KEY_OC, numeroActual);
-            actualizarNumeroOC();
+            localStorage.setItem('oc_hhs', numeroActual);
+            document.getElementById('ocNum').textContent = String(numeroActual).padStart(4, '0');
         });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const hoy = new Date();
-        document.getElementById('inputFecha').valueAsDate = hoy;
-        document.getElementById('dispFecha').textContent = hoy.toLocaleDateString('es-CL');
+    // PRUEBA RÁPIDA (para que veas que ya no se corta)
+    document.getElementById('dispProv').textContent = 'EXTINTORES CHILE SPA';
+    document.getElementById('dispRut').textContent = '76.335.833-K';
+    document.getElementById('dispDir').textContent = 'Nataniel Cox #1664';
+    document.getElementById('dispObra').textContent = 'Docpopcorn Alameda';
+    document.getElementById('dispCondicionPago').textContent = 'Contado';
 
-        // CARGAR PROVEEDORES
-        fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
-            .then(r => r.text())
-            .then(csv => {
-                const lineas = csv.split('\n').map(l => l.trim());
-                const data = {};
-                for (let i = 1; i < lineas.length; i++) {
-                    const cols = lineas[i].split(',').map(x => x.replace(/^"|"$/g, '').trim());
-                    if (cols[0] && cols[1]) data[cols[0]] = { razon: cols[1], cond: cols[2] || 'Contado', rut: cols[3] || '', dir: cols[4] || '' };
-                }
-                const selProv = document.getElementById('inputProveedor');
-                const selClase = document.getElementById('newClase');
-                selProv.innerHTML = '<option value="" disabled selected>Selecciona Razón Social</option>';
-                selClase.innerHTML = '<option value="" disabled selected>Clase</option>';
-                Object.keys(data).sort().forEach(k => {
-                    selProv.add(new Option(data[k].razon, k));
-                    selClase.add(new Option(k, k));
-                });
-                selProv.onchange = () => {
-                    const p = data[selProv.value] || {};
-                    document.getElementById('dispProv').textContent = p.razon || '-';
-                    document.getElementById('inputRutProv').value = p.rut || '';
-                    document.getElementById('inputDireccion').value = p.dir || '';
-                    document.getElementById('dispRut').textContent = p.rut || '-';
-                    document.getElementById('dispDir').textContent = p.dir || '-';
-                    const cond = document.getElementById('inputCondicionPago');
-                    cond.innerHTML = '<option>Contado</option><option>Crédito</option>';
-                    cond.value = p.cond || 'Contado';
-                    document.getElementById('dispCondicionPago').textContent = cond.value;
-                    cond.onchange = () => document.getElementById('dispCondicionPago').textContent = cond.value;
-                };
-            });
+    document.getElementById('tablaCuerpo').innerHTML = `
+        <tr><td>CLIMA</td><td>Extintores</td><td style="text-align:center;">UN</td><td style="text-align:center;">3</td><td style="text-align:right;">$34.000</td><td style="text-align:right;">$102.000</td></tr>
+    `;
 
-        // CARGAR OBRAS
-        fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
-            .then(r => r.text())
-            .then(csv => {
-                const sel = document.getElementById('inputObraSelect');
-                sel.innerHTML = '<option value="">Selecciona la obra</option>';
-                csv.split('\n').slice(1).forEach(linea => {
-                    const nombre = linea.split(',')[0].replace(/^"|"$/g, '').trim();
-                    if (nombre && nombre !== "Obras") sel.add(new Option(nombre, nombre));
-                });
-                sel.onchange = () => document.getElementById('dispObra').textContent = sel.value || '-';
-            });
-    });
+    document.getElementById('totalNeto').textContent = '$102.000';
+    document.getElementById('totalIva').textContent = '$19.380';
+    document.getElementById('totalFinal').textContent = '$121.380';
 
-    // ÍTEMS Y NOTAS
-    let items = [], notasExtra = [];
-    function agregarItem() {
-        const clase = document.getElementById('newClase').value;
-        const desc = document.getElementById('newDesc').value.trim();
-        const cant = parseFloat(document.getElementById('newQty').value) || 0;
-        const precio = parseFloat(document.getElementById('newPrice').value) || 0;
-        if (!clase || !desc) return alert("Faltan datos");
-        items.push({ clase, desc, cant, precio, total: cant * precio });
-        renderizarTabla();
-        document.getElementById('newDesc').value = document.getElementById('newQty').value = document.getElementById('newPrice').value = "";
-    }
-    function renderizarTabla() {
-        const tbody = document.getElementById('tablaCuerpo'); tbody.innerHTML = "";
-        let neto = 0;
-        items.forEach(i => {
-            neto += i.total;
-            tbody.innerHTML += `<tr>
-                <td style="padding:12px 8px;">${i.clase}</td>
-                <td style="padding:12px 8px;">${i.desc}</td>
-                <td style="padding:12px 8px; text-align:center;">UN</td>
-                <td style="padding:12px 8px; text-align:center;">${i.cant}</td>
-                <td style="padding:12px 8px; text-align:right;">${formatearMoneda(i.precio)}</td>
-                <td style="padding:12px 8px; text-align:right;">${formatearMoneda(i.total)}</td>
-            </tr>`;
-        });
-        const iva = neto * 0.19;
-        document.getElementById('totalNeto').textContent = formatearMoneda(neto);
-        document.getElementById('totalIva').textContent = formatearMoneda(iva);
-        document.getElementById('totalFinal').textContent = formatearMoneda(neto + iva);
-    }
-    function agregarNota() { const t = document.getElementById('nuevaNota').value.trim(); if(t){ notasExtra.push('• '+t); document.getElementById('nuevaNota').value=''; renderizarNotas(); } }
-    function renderizarNotas() {
-        const lista = document.getElementById('listaNotasEditables');
-        const oc = document.getElementById('notasExtra');
-        if (!notasExtra.length) { lista.innerHTML = '<em style="color:#999;">Sin notas</em>'; oc.innerHTML = ''; return; }
-        lista.innerHTML = ""; oc.innerHTML = notasExtra.join('<br>');
-        notasExtra.forEach((n, i) => {
-            const div = document.createElement('div');
-            div.style = 'margin:8px 0; padding:12px; background:white; border-radius:10px; display:flex; justify-content:space-between;';
-            div.innerHTML = `<span>${n}</span><div><button onclick="prompt('Editar:', '${n.substring(2)}')?.trim() && (notasExtra[${i}]='• '+prompt('Editar:', '${n.substring(2)}').trim(), renderizarNotas())">Editar</button> <button onclick="if(confirm('Borrar?')){notasExtra.splice(${i},1);renderizarNotas()}">Borrar</button></div>`;
-            lista.appendChild(div);
-        });
-    }
-    document.getElementById('nuevaNota').addEventListener('keypress', e => { if(e.key==='Enter') agregarNota(); });
-    renderizarNotas();
+    // Haz clic aquí para generar el PDF perfecto
+    generarPDF();
 </script>
 </body>
 </html>
