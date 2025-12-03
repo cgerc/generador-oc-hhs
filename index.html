@@ -2,280 +2,370 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador OC - Hard Hat Solutions</title>
+    <title>Generador de Orden de Compra - Hard Hat Solutions</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; background: #f5f7fa; padding: 20px; display: flex; gap: 30px; flex-wrap: wrap; }
-        .control-panel { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 420px; max-width: 100%; position: sticky; top: 20px; height: fit-content; }
-        .page { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 12px 35px rgba(0,0,0,0.12); flex: 1; min-width: 650px; max-width: 950px; }
-        @media (max-width: 1200px) { body { flex-direction: column; align-items: center; } .control-panel, .page { width: 100%; max-width: 800px; min-width: auto; } .control-panel { position: static; } }
-        h2, h3 { color: #0066cc; margin-bottom: 20px; }
-        select, input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; }
-        button { background: #0066cc; color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0055aa; }
-        .btn-print { width: 100%; padding: 20px; font-size: 22px; margin-top: 40px; }
-        @media print { .no-print { display: none !important; } body, .page { background: white !important; margin: 0 !important; padding: 30px !important; box-shadow: none !important; } }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+        .control-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; float: left; margin-right: 20px; }
+        .page { background: white; padding: 20px; border: 1px solid #ddd; max-width: 800px; margin-top: 20px; box-sizing: border-box; }
+        @media print { .no-print { display: none; } .page { margin: 0; padding: 20px; } }
+        button, select, input { margin: 5px 0; width: 100%; padding: 8px; box-sizing: border-box; }
+        .btn-print { background: #0066cc; color: white; padding: 12px 30px; border: none; cursor: pointer; font-size: 16px; border-radius: 6px; }
+        .btn-print:hover { background: #0055aa; }
+
+        /* EVITA QUE EL PDF SE CORTE */
+        table, tr, .totals-section, .footer-notes, .notes, .signatures, .info-grid, .oc-box {
+            page-break-inside: avoid !important;
+        }
+        .page { page-break-after: always; }
     </style>
 </head>
 <body>
 
-<div class="control-panel no-print">
-    <h2>Datos de la OC</h2>
-    <select id="inputObraSelect"><option value="">Cargando obras...</option></select>
-    <select id="inputProveedor"><option value="" disabled selected>Cargando proveedores...</option></select>
-    <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly>
-    <input type="text" id="inputDireccion" placeholder="Dirección" readonly>
-    <input type="date" id="inputFecha" readonly>
-    <select id="inputCondicionPago"><option value="">Seleccione proveedor primero</option></select>
+    <div class="control-panel no-print">
+        <h2>Datos de la OC</h2>
+        <select id="inputObraSelect"><option value="">Selecciona la obra</option></select>
+        <select id="inputProveedor"><option value="" disabled selected>Selecciona Razón Social</option></select>
+        <input type="text" id="inputRutProv" placeholder="RUT Proveedor" readonly style="background:#f9f9f9;">
+        <input type="text" id="inputDireccion" placeholder="Dirección" readonly style="background:#f9f9f9;">
+        <input type="date" id="inputFecha" readonly>
+        <select id="inputCondicionPago"><option value="">Seleccione proveedor primero</option></select>
 
-    <h3>Notas al Proveedor</h3>
-    <div style="display:flex; gap:10px;">
-        <input type="text" id="nuevaNota" placeholder="Escriba nota y presione Enter" style="flex:1;">
-        <button onclick="agregarNota()">+ Agregar</button>
+        <h3>Notas al Proveedor</h3>
+        <div style="margin-top: 10px;">
+            <input type="text" id="nuevaNota" placeholder="Escriba nota y presione Enter o +Agregar" style="width: 70%;">
+            <button onclick="agregarNota()" style="width: 28%;">+ Agregar</button>
+        </div>
+        <div id="listaNotasEditables" style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 6px; font-size: 14px;"></div>
+
+        <h3>Ítems</h3>
+        <div id="items-form">
+           <select id="newClase"><option value="" disabled selected>Clase</option></select>
+            <input type="text" id="newDesc" placeholder="Descripción">
+            <input type="number" id="newQty" placeholder="Cant." style="width: 70px;">
+            <input type="number" id="newPrice" placeholder="Precio Unit.">
+            <button onclick="agregarItem()">+ Agregar</button>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn-print" onclick="generarPDF()">Generar y Descargar PDF</button>
+            <p style="font-size:15px; color:#666; margin:15px 0 0 0;">
+                Próxima OC: <strong id="proximaOC">cargando...</strong>
+            </p>
+        </div>
     </div>
-    <div id="listaNotasEditables" style="margin-top:15px; max-height:200px; overflow-y:auto; background:#f9f9f9; padding:15px; border-radius:12px;"></div>
 
-    <h3>Ítems</h3>
-    <select id="newClase"><option value="" disabled selected>Cargando clases...</option></select>
-    <input type="text" id="newDesc" placeholder="Descripción">
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <input type="number" id="newQty" placeholder="Cant." style="width:120px;">
-        <input type="number" id="newPrice" placeholder="Precio Unit." style="flex:1;">
-        <button onclick="agregarItem()">+ Agregar</button>
-    </div>
-
-    <div style="text-align:center; margin-top:50px;">
-        <button class="btn-print" onclick="generarPDF()">Generar y Descargar PDF</button>
-        <p style="margin-top:20px;">Próxima OC: <strong id="proximaOC" style="color:#0066cc; font-size:24px;">0002</strong></p>
-    </div>
-</div>
-
-<div class="page">
-
-    <!-- ENCABEZADO EXACTAMENTE COMO TU FOTO -->
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px; padding-bottom:15px; border-bottom:2px solid #0066cc;">
-        <div style="display:flex; align-items:flex-start; gap:20px;">
-            <img src="logo casi.jpg" alt="Logo" style="width:110px; height:auto;" onerror="this.style.display='none'">
-            <div style="font-size:14px; line-height:1.5; color:#333;">
-                <strong style="font-size:20px; color:#0066cc; display:block; margin-bottom:4px;">HARD HAT SOLUTIONS SPA</strong>
-                Giro: CONSTRUCCIÓN<br>
-                RUT: 78.293.581-K<br>
-                Dr. Manuel Barros Borgoño 71, Of 1105, Providencia<br>
-                Contacto: administracion@hhs.cl | +56 9 6254 3173
+    <div class="page">
+        <header>
+            <div class="logo-section" style="display:flex; align-items:center; justify-content:space-between;">
+                <img src="logo casi.jpg" alt="Hard Hat Logo" style="width: 120px;">
+                <div class="company-info" style="text-align:right;">
+                    <h3>HARD HAT SOLUTIONS SPA</h3>
+                    <p>Giro: ESTUDIO, GESTIÓN, ADMINISTRACIÓN DE OBRAS DE CONSTRUCCIÓN</p>
+                    <p>RUT: 78.293.581-K</p>
+                    <p>Dr. Manuel Barros Borgoño 71, Of 1105, Providencia</p>
+                    <p>Contacto: administracion@hhs.cl | +56 9 6254 3173</p>
+                </div>
             </div>
-        </div>
-        <div style="text-align:right;">
-            <h1 style="color:#0066cc; font-size:36px; margin:0; font-weight:bold;">ORDEN DE COMPRA</h1>
-            <div style="margin-top:8px;">
-                <span style="color:#d32f2f; font-size:48px; font-weight:bold;">N° </span>
-                <span id="ocNum" style="color:#d32f2f; font-size:48px; font-weight:bold;">0001</span>
+            <div class="oc-box" style="text-align:right; margin-top:20px;">
+                <h2>ORDEN DE COMPRA</h2>
+                <div class="oc-number">N° <span id="ocNum" style="font-size:24px; font-weight:bold;">000</span></div>
+                <p>Fecha: <span id="dispFecha"></span></p>
             </div>
-            <div style="margin-top:8px; font-size:18px; color:#333;">
-                Fecha: <span id="dispFecha" style="font-weight:bold;"></span>
+        </header>
+
+        <section class="info-grid" style="display:flex; justify-content:space-between; margin:30px 0; font-size:15px;">
+            <div class="box">
+                <strong>Señor(es):</strong> <span id="dispProv"></span><br>
+                <strong>RUT:</strong> <span id="dispRut"></span><br>
+                <strong>Dirección:</strong> <span id="dispDir"></span>
             </div>
-        </div>
-    </div>
+            <div class="box" style="text-align:right;">
+                <strong>Obra:</strong> <span id="dispObra">–</span><br>
+                <strong>Condición de Pago:</strong> <span id="dispCondicionPago">–</span><br>
+                <strong>Moneda:</strong> Peso Chileno
+            </div>
+        </section>
 
-    <!-- PROVEEDOR Y OBRA (con barra azul izquierda) -->
-    <div style="display:flex; gap:30px; margin:40px 0; flex-wrap:wrap;">
-        <div style="flex:1; min-width:300px; background:#f8fbff; padding:20px; border-radius:0 12px 12px 0; border-left:6px solid #0066cc; font-size:16px; line-height:1.8;">
-            <strong>Señor(es):</strong> <span id="dispProv">-</span><br>
-            <strong>RUT:</strong> <span id="dispRut">-</span><br>
-            <strong>Dirección:</strong> <span id="dispDir">-</span>
-        </div>
-        <div style="flex:1; min-width:300px; background:#f8fbff; padding:20px; border-radius:0 12px 12px 0; border-left:6px solid #0066cc; font-size:16px; line-height:1.8;">
-            <strong>Obra:</strong> <span id="dispObra">-</span><br>
-            <strong>Condición de Pago:</strong> <span id="dispCondicionPago">-</span><br>
-            <strong>Moneda:</strong> Peso Chileno
-        </div>
-    </div>
-
-    <!-- TABLA QUE NUNCA SE CORTA -->
-    <div style="margin:40px 0; overflow:hidden;">
-        <table style="width:100%; border-collapse:collapse; font-size:15px; page-break-inside:avoid;">
-            <thead>
-                <tr style="background:#0066cc; color:white;">
-                    <th style="padding:12px 8px; text-align:left;">Clase</th>
-                    <th style="padding:12px 8px; text-align:left; width:38%;">Descripción</th>
-                    <th style="padding:12px 8px; text-align:center;">Unid.</th>
-                    <th style="padding:12px 8px; text-align:center;">Cant.</th>
-                    <th style="padding:12px 8px; text-align:right;">Precio Unit.</th>
-                    <th style="padding:12px 8px; text-align:right;">Total</th>
+        <table class="items-table" style="width:100%; border-collapse:collapse; margin:20px 0;">
+            <thead style="background:#0066cc; color:white;">
+                <tr>
+                    <th style="padding:10px; text-align:left; width:140px;">Clase</th>
+                    <th style="padding:10px; text-align:left;">Descripción</th>
+                    <th style="padding:10px;">Unid.</th>
+                    <th style="padding:10px;">Cant.</th>
+                    <th style="padding:10px;">Precio Unit.</th>
+                    <th style="padding:10px;">Total</th>
                 </tr>
             </thead>
-            <tbody id="tablaCuerpo"></tbody>
+            <tbody id="tablaCuerpo" style="font-size:14px;"></tbody>
         </table>
-    </div>
 
-    <!-- TOTALES (mismo tamaño y que nunca se cortan) -->
-    <div style="page-break-inside:avoid; margin:50px 0;">
-        <div style="float:right; background:#f0f7ff; padding:25px 35px; border-radius:12px; border:3px solid #0066cc; min-width:340px;">
-            <div style="margin:12px 0; font-size:18px; white-space:nowrap;">
-                <strong>Neto:</strong> <span id="totalNeto">$0</span>
-            </div>
-            <div style="margin:12px 0; font-size:18px; white-space:nowrap;">
-                <strong>IVA 19%:</strong> <span id="totalIva">$0</span>
-            </div>
-            <div style="margin:20px 0 0; padding-top:15px; border-top:4px solid #0066cc; font-size:18px; white-space:nowrap;">
-                <strong>TOTAL:</strong> <span id="totalFinal" style="color:#d32f2f; font-weight:bold;">$0</span>
+        <div class="totals-section" style="text-align:right; margin:30px 0;">
+            <div style="display:inline-block; background:#f8f8f8; padding:15px; border-radius:8px;">
+                <div style="margin:8px 0;"><span>Neto:</span> <strong><span id="totalNeto">$0</span></strong></div>
+                <div style="margin:8px 0;"><span>IVA (19%):</span> <strong><span id="totalIva">$0</span></strong></div>
+                <div style="margin:12px 0; font-size:18px; border-top:2px solid #000; padding-top:8px;">
+                    <span>TOTAL:</span> <strong><span id="totalFinal">$0</span></strong>
+                </div>
             </div>
         </div>
-        <div style="clear:both;"></div>
+
+        <footer class="footer-notes" style="margin-top:40px;">
+            <div class="notes">
+                <strong>Notas al Proveedor:</strong>
+                <div id="dispNotas" style="font-size: 10px; margin-top: 8px; line-height:1.4;">
+                    • Toda facturación deberá adjuntar esta O.C.<br>
+                    • No se aceptarán facturaciones con precios distintos a esta O.C.<br>
+                    <span id="notasExtra"></span>
+                </div>
+            </div>
+            <div class="signatures" style="text-align:right; margin-top:40px;">
+                <div style="display:inline-block;">
+                    <br><br><br>
+                    <hr style="border-top:1px solid #000;">
+                    <p style="margin:5px 0;"><strong>Jorge Chacon</strong></p>
+                    <p style="margin:0; color:#555;">Gerente General</p>
+                </div>
+            </div>
+        </footer>
     </div>
 
-    <!-- NOTAS Y FIRMA -->
-    <div style="margin-top:70px; font-size:15px; page-break-inside:avoid;">
-        <strong>Notas al Proveedor:</strong>
-        <div style="margin-top:12px; line-height:1.8;">
-            • Toda facturación deberá adjuntar esta O.C.<br>
-            • No se aceptarán facturaciones con precios distintos a esta O.C.<br>
-            <span id="notasExtra"></span>
-        </div>
-    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <div style="text-align:center; margin-top:100px;">
-        <div style="display:inline-block; border-top:3px solid #000; padding-top:20px; width:340px;">
-            <strong style="font-size:20px;">Jorge Chacón</strong><br>
-            <span style="color:#666;">Gerente General</span>
-        </div>
-    </div>
-</div>
+    <script>
+        function formatearMoneda(n) {
+            return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n);
+        }
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-    function formatearMoneda(n) {
-        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n);
-    }
+        // === NÚMERO DE OC INCREMENTAL ===
+        const KEY_OC = 'ultimaOC_HHS';
+        let numeroActual = parseInt(localStorage.getItem(KEY_OC) || '1');
 
-    const KEY_OC = 'ultimaOC_HHS';
-    let numeroActual = parseInt(localStorage.getItem(KEY_OC) || '1');
-    function actualizarNumeroOC() {
-        const padded = String(numeroActual).padStart(4, '0');
-        document.getElementById('ocNum').textContent = padded;
-        document.getElementById('proximaOC').textContent = String(numeroActual + 1).padStart(4, '0');
-    }
-    actualizarNumeroOC();
+        function actualizarNumeroOC() {
+            const padded = String(numeroActual).padStart(4, '0');
+            document.getElementById('ocNum').textContent = padded;
+            document.getElementById('proximaOC').textContent = String(numeroActual + 1).padStart(4, '0');
+        }
 
-    function generarPDF() {
-        const obra = document.getElementById('dispObra').textContent.trim() || 'Sin Obra';
-        const numeroOC = document.getElementById('ocNum').textContent;
+        function generarPDF() {
+            const obra = document.getElementById('dispObra').textContent.trim() || 'Sin Obra';
+            const numeroOC = document.getElementById('ocNum').textContent;
+            const nombreArchivo = `${obra} , OC N°${numeroOC}.pdf`;
 
-        html2pdf().set({
-            margin: [15, 15, 15, 15],
-            filename: `${obra} - OC N°${numeroOC}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024, width: 900 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        })
-        .from(document.querySelector('.page'))
-        .save()
-        .then(() => {
-            numeroActual++;
-            localStorage.setItem(KEY_OC, numeroActual);
-            actualizarNumeroOC();
-        });
-    }
+            const element = document.querySelector('.page');
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const hoy = new Date();
-        document.getElementById('inputFecha').valueAsDate = hoy;
-        document.getElementById('dispFecha').textContent = hoy.toLocaleDateString('es-CL');
+            const opt = {
+                margin: [0.3, 0.3, 0.3, 0.3],
+                filename: nombreArchivo,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    letterRendering: true,
+                    allowTaint: false
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'a4', 
+                    orientation: 'portrait' 
+                },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
 
-        // CARGAR PROVEEDORES
-        fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
-            .then(r => r.text())
-            .then(csv => {
-                const lineas = csv.split('\n').map(l => l.trim());
-                const data = {};
-                for (let i = 1; i < lineas.length; i++) {
-                    const cols = lineas[i].split(',').map(x => x.replace(/^"|"$/g, '').trim());
-                    if (cols[0] && cols[1]) data[cols[0]] = { razon: cols[1], cond: cols[2] || 'Contado', rut: cols[3] || '', dir: cols[4] || '' };
-                }
-                const selProv = document.getElementById('inputProveedor');
-                const selClase = document.getElementById('newClase');
-                selProv.innerHTML = '<option value="" disabled selected>Selecciona Razón Social</option>';
-                selClase.innerHTML = '<option value="" disabled selected>Clase</option>';
-                Object.keys(data).sort().forEach(k => {
-                    selProv.add(new Option(data[k].razon, k));
-                    selClase.add(new Option(k, k));
+            html2pdf().set(opt).from(element).save().then(() => {
+                numeroActual++;
+                localStorage.setItem(KEY_OC, numeroActual);
+                actualizarNumeroOC();
+            });
+        }
+
+        // Inicializar número
+        actualizarNumeroOC();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('inputFecha').valueAsDate = new Date();
+            document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
+
+            // CARGAR PROVEEDORES
+            fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
+                .then(r => r.text())
+                .then(csv => {
+                    const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
+                    const data = {};
+
+                    for (let i = 1; i < lineas.length; i++) {
+                        const c = lineas[i].split(',').map(x => x.replace(/^"|"$/g, '').trim());
+                        const clase = c[0];
+                        const razon = c[1];
+                        const condicionPago = c[2] || 'Contado';
+                        const rut = c[3] || '';
+                        const dir = c[4] || '';
+                        if (clase && razon) data[clase] = { razon, condicionPago, rut, dir };
+                    }
+
+                    const selProv = document.getElementById('inputProveedor');
+                    selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
+                    Object.keys(data).sort().forEach(clase => {
+                        const opt = document.createElement('option');
+                        opt.value = clase;
+                        opt.textContent = data[clase].razon;
+                        selProv.appendChild(opt);
+                    });
+
+                    const selClase = document.getElementById('newClase');
+                    selClase.innerHTML = '<option value="">Clase</option>';
+                    Object.keys(data).sort().forEach(clase => {
+                        const opt = document.createElement('option');
+                        opt.value = clase;
+                        opt.textContent = clase;
+                        selClase.appendChild(opt);
+                    });
+
+                    selProv.onchange = () => {
+                        const p = data[selProv.value];
+                        if (!p) return;
+                        document.getElementById('dispProv').textContent = p.razon;
+                        document.getElementById('inputRutProv').value = p.rut;
+                        document.getElementById('inputDireccion').value = p.dir;
+                        document.getElementById('dispRut').textContent = p.rut;
+                        document.getElementById('dispDir').textContent = p.dir;
+
+                        const condicionSelect = document.getElementById('inputCondicionPago');
+                        condicionSelect.innerHTML = `<option value="Contado">Contado</option><option value="Crédito">Crédito</option>`;
+                        condicionSelect.value = p.condicionPago;
+                        document.getElementById('dispCondicionPago').textContent = p.condicionPago;
+
+                        condicionSelect.onchange = () => {
+                            document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
+                        };
+                    };
                 });
-                selProv.onchange = () => {
-                    const p = data[selProv.value] || {};
-                    document.getElementById('dispProv').textContent = p.razon || '-';
-                    document.getElementById('inputRutProv').value = p.rut || '';
-                    document.getElementById('inputDireccion').value = p.dir || '';
-                    document.getElementById('dispRut').textContent = p.rut || '-';
-                    document.getElementById('dispDir').textContent = p.dir || '-';
-                    const cond = document.getElementById('inputCondicionPago');
-                    cond.innerHTML = '<option>Contado</option><option>Crédito</option>';
-                    cond.value = p.cond || 'Contado';
-                    document.getElementById('dispCondicionPago').textContent = cond.value;
-                    cond.onchange = () => document.getElementById('dispCondicionPago').textContent = cond.value;
-                };
+
+            // CARGAR OBRAS
+            fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
+                .then(r => r.text())
+                .then(csv => {
+                    const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
+                    const selObra = document.getElementById('inputObraSelect');
+                    selObra.innerHTML = '<option value="">Selecciona la obra...</option>';
+                    for (let i = 1; i < lineas.length; i++) {
+                        const nombre = lineas[i].split(',')[0].replace(/^"|"$/g, '').trim();
+                        if (nombre && nombre !== "Obras") {
+                            const opt = document.createElement('option');
+                            opt.value = nombre;
+                            opt.textContent = nombre;
+                            selObra.appendChild(opt);
+                        }
+                    }
+                    selObra.onchange = () => {
+                        document.getElementById('dispObra').textContent = selObra.value || '–';
+                    };
+                });
+        });
+
+        // === ÍTEMS ===
+        let items = [];
+        function agregarItem() {
+            const clase = document.getElementById('newClase').value;
+            const desc = document.getElementById('newDesc').value.trim();
+            const cant = parseFloat(document.getElementById('newQty').value) || 0;
+            const precio = parseFloat(document.getElementById('newPrice').value) || 0;
+            if (!clase || !desc) return alert("Faltan clase o descripción");
+            items.push({ clase, desc, cant, precio, total: cant * precio });
+            renderizarTabla();
+            document.getElementById('newDesc').value = "";
+            document.getElementById('newQty').value = "";
+            document.getElementById('newPrice').value = "";
+        }
+
+        function renderizarTabla() {
+            const tbody = document.getElementById('tablaCuerpo');
+            tbody.innerHTML = "";
+            let neto = 0;
+            items.forEach(i => {
+                neto += i.total;
+                tbody.innerHTML += `<tr>
+                    <td style="padding:8px; border-bottom:1px solid #ddd;">${i.clase}</td>
+                    <td style="padding:8px; border-bottom:1px solid #ddd;">${i.desc}</td>
+                    <td style="padding:8px; border-bottom:1px solid #ddd; text-align:center;">UN</td>
+                    <td style="padding:8px; border-bottom:1px solid #ddd; text-align:center;">${i.cant}</td>
+                    <td style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">${formatearMoneda(i.precio)}</td>
+                    <td style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">${formatearMoneda(i.total)}</td>
+                </tr>`;
+            });
+            const iva = neto * 0.19;
+            document.getElementById('totalNeto').textContent = formatearMoneda(neto);
+            document.getElementById('totalIva').textContent = formatearMoneda(iva);
+            document.getElementById('totalFinal').textContent = formatearMoneda(neto + iva);
+        }
+
+        // === NOTAS AL PROVEEDOR - EDITABLES ===
+        let notasExtra = [];
+
+        function renderizarNotas() {
+            const contenedor = document.getElementById('listaNotasEditables');
+            const contenedorOC = document.getElementById('notasExtra');
+
+            if (notasExtra.length === 0) {
+                contenedor.innerHTML = '<em style="color:#999;">Sin notas adicionales</em>';
+                contenedorOC.innerHTML = '';
+                return;
+            }
+
+            contenedor.innerHTML = '';
+            notasExtra.forEach((nota, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = 'margin:6px 0; padding:8px; background:white; border-radius:4px; display:flex; justify-content:space-between; align-items:center; font-size:13px;';
+                div.innerHTML = `
+                    <span>${nota}</span>
+                    <div>
+                        <button onclick="editarNota(${index})">Editar</button>
+                        <button onclick="borrarNota(${index})">Borrar</button>
+                    </div>
+                `;
+                contenedor.appendChild(div);
             });
 
-        // CARGAR OBRAS
-        fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
-            .then(r => r.text())
-            .then(csv => {
-                const sel = document.getElementById('inputObraSelect');
-                sel.innerHTML = '<option value="">Selecciona la obra</option>';
-                csv.split('\n').slice(1).forEach(linea => {
-                    const nombre = linea.split(',')[0].replace(/^"|"$/g, '').trim();
-                    if (nombre && nombre !== "Obras") sel.add(new Option(nombre, nombre));
-                });
-                sel.onchange = () => document.getElementById('dispObra').textContent = sel.value || '-';
-            });
-    });
+            contenedorOC.innerHTML = notasExtra.join('<br>');
+        }
 
-    // ÍTEMS Y NOTAS
-    let items = [], notasExtra = [];
-    function agregarItem() {
-        const clase = document.getElementById('newClase').value;
-        const desc = document.getElementById('newDesc').value.trim();
-        const cant = parseFloat(document.getElementById('newQty').value) || 0;
-        const precio = parseFloat(document.getElementById('newPrice').value) || 0;
-        if (!clase || !desc) return alert("Faltan datos");
-        items.push({ clase, desc, cant, precio, total: cant * precio });
-        renderizarTabla();
-        document.getElementById('newDesc').value = document.getElementById('newQty').value = document.getElementById('newPrice').value = "";
-    }
-    function renderizarTabla() {
-        const tbody = document.getElementById('tablaCuerpo'); tbody.innerHTML = "";
-        let neto = 0;
-        items.forEach(i => {
-            neto += i.total;
-            tbody.innerHTML += `<tr>
-                <td style="padding:12px 8px;">${i.clase}</td>
-                <td style="padding:12px 8px;">${i.desc}</td>
-                <td style="padding:12px 8px; text-align:center;">UN</td>
-                <td style="padding:12px 8px; text-align:center;">${i.cant}</td>
-                <td style="padding:12px 8px; text-align:right;">${formatearMoneda(i.precio)}</td>
-                <td style="padding:12px 8px; text-align:right;">${formatearMoneda(i.total)}</td>
-            </tr>`;
+        function agregarNota() {
+            const input = document.getElementById('nuevaNota');
+            const texto = input.value.trim();
+            if (!texto) return;
+            notasExtra.push("• " + texto);
+            input.value = "";
+            renderizarNotas();
+        }
+
+        function editarNota(index) {
+            const nuevoTexto = prompt("Editar nota:", notasExtra[index].substring(2));
+            if (nuevoTexto === null) return;
+            if (nuevoTexto.trim() === "") {
+                borrarNota(index);
+            } else {
+                notasExtra[index] = "• " + nuevoTexto.trim();
+                renderizarNotas();
+            }
+        }
+
+        function borrarNota(index) {
+            if (confirm("¿Borrar esta nota?")) {
+                notasExtra.splice(index, 1);
+                renderizarNotas();
+            }
+        }
+
+        document.getElementById('nuevaNota').addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                agregarNota();
+            }
         });
-        const iva = neto * 0.19;
-        document.getElementById('totalNeto').textContent = formatearMoneda(neto);
-        document.getElementById('totalIva').textContent = formatearMoneda(iva);
-        document.getElementById('totalFinal').textContent = formatearMoneda(neto + iva);
-    }
-    function agregarNota() { const t = document.getElementById('nuevaNota').value.trim(); if(t){ notasExtra.push('• '+t); document.getElementById('nuevaNota').value=''; renderizarNotas(); } }
-    function renderizarNotas() {
-        const lista = document.getElementById('listaNotasEditables');
-        const oc = document.getElementById('notasExtra');
-        if (!notasExtra.length) { lista.innerHTML = '<em style="color:#999;">Sin notas</em>'; oc.innerHTML = ''; return; }
-        lista.innerHTML = ""; oc.innerHTML = notasExtra.join('<br>');
-        notasExtra.forEach((n, i) => {
-            const div = document.createElement('div');
-            div.style = 'margin:8px 0; padding:12px; background:white; border-radius:10px; display:flex; justify-content:space-between;';
-            div.innerHTML = `<span>${n}</span><div><button onclick="prompt('Editar:', '${n.substring(2)}')?.trim() && (notasExtra[${i}]='• '+prompt('Editar:', '${n.substring(2)}').trim(), renderizarNotas())">Editar</button> <button onclick="if(confirm('Borrar?')){notasExtra.splice(${i},1);renderizarNotas()}">Borrar</button></div>`;
-            lista.appendChild(div);
-        });
-    }
-    document.getElementById('nuevaNota').addEventListener('keypress', e => { if(e.key==='Enter') agregarNota(); });
-    renderizarNotas();
-</script>
+
+        // Inicializar notas
+        renderizarNotas();
+    </script>
 </body>
 </html>
