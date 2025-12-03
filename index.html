@@ -126,7 +126,7 @@
 </div>
 
 <script>
-    // Número OC persistente
+    // Número OC persistent
     let numeroActual = parseInt(localStorage.getItem('oc_hhs') || '1');
     document.getElementById('ocNum').textContent = String(numeroActual).padStart(4, '0');
     document.getElementById('dispFecha').textContent = new Date().toLocaleDateString('es-CL');
@@ -136,8 +136,8 @@
             margin:       [0, 0, 0, 0],
             filename:     `${document.getElementById('dispObra').textContent || 'OC'} N°${String(numeroActual).padStart(4,'0')}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 3, useCORS: true, letterRendering: true, width: 794, height: 1123, windowWidth: 794 },
-            jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+            html2canvas:  { scale: 3, useCORS: true, letterRendering: true, width: 2480, height: 3508, windowWidth: 2480 },
+            jsPDF:        { unit: 'px', format: [2480, 3508], orientation: 'portrait' },
             pagebreak:    { mode: ['avoid-all'] }
         };
 
@@ -148,7 +148,7 @@
         });
     }
 
-    // PRUEBA RÁPIDA (para que veas que ya no se corta)
+    // PRUEBA RÁPIDA 
     document.getElementById('dispProv').textContent = 'EXTINTORES CHILE SPA';
     document.getElementById('dispRut').textContent = '76.335.833-K';
     document.getElementById('dispDir').textContent = 'Nataniel Cox #1664';
@@ -163,7 +163,7 @@
     document.getElementById('totalIva').textContent = '$19.380';
     document.getElementById('totalFinal').textContent = '$121.380';
 
-    // Haz clic aquí para generar el PDF perfecto
+    
     generarPDF();
 </script>
 </body>
