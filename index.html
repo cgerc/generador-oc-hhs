@@ -187,28 +187,47 @@
             document.getElementById('inputFecha').valueAsDate = new Date();
             document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
-            // CARGAR PROVEEDORES (versión robusta que maneja comas en direcciones)
+            // CARGAR PROVEEDORES - VERSIÓN QUE SÍ FUNCIONA CON TUS 38 FILAS
 fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
-    .then(r => r.text())
+    .then(response => response.text())
     .then(csv => {
-        const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
+        const rows = csv.split('\n').map(row => row.trim()).filter(row => row);
         const data = {};
 
-        for (let i = 1; i < lineas.length; i++) {
-            // Parseo avanzado que respeta comas dentro de comillas
-            const campos = lineas[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
-            const c = campos.map(x => x.replace(/^"|"$/g, '').trim());
+        // Saltamos la cabecera
+        for (let i = 1; i < rows.length; i++) {
+            let row = rows[i];
+            let fields = [];
+            let field = '';
+            let inQuotes = false;
 
-            const clase = c[0] || '';
-            const razon = c[1] || '';
-            const condicionPago = c[2] || 'Contado';
-            const rut = c[3] || '';
-            const dir = c[4] || '';
+            // Parseo manual carácter por carácter
+            for (let char of row + ',') {
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    fields.push(field.trim());
+                    field = '';
+                } else {
+                    field += char;
+                }
+            }
 
-            if (clase && razon) {  // Solo agrega si tiene clase y razón social
+            // Limpiar comillas
+            fields = fields.map(f => f.replace(/^"|"$/g, '').trim());
+
+            const clase = fields[0] || '';
+            const razon = fields[1] || '';
+            const condicionPago = fields[2] || 'Contado';
+            const rut = fields[3] || '';
+            const dir = fields[4] || '';
+
+            if (clase && razon) {
                 data[clase] = { razon, condicionPago, rut, dir };
             }
         }
+
+        console.log('Proveedores cargados:', Object.keys(data).length); // <-- Esto te dirá cuántas cargó
 
         // Dropdown Razón Social
         const selProv = document.getElementById('inputProveedor');
@@ -230,7 +249,7 @@ fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-y
             selClase.appendChild(opt);
         });
 
-        // Cuando selecciona proveedor
+        // Cuando cambias proveedor
         selProv.onchange = () => {
             const p = data[selProv.value];
             if (!p) return;
@@ -250,9 +269,9 @@ fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-y
             };
         };
     })
-    .catch(err => {
-        console.error('Error cargando proveedores:', err);
-        alert('Error al cargar proveedores. Revisa la consola (F12)');
+    .catch(error => {
+        console.error('Error:', error);
+        alert('No se pudieron cargar los proveedores');
     });
 
             // CARGAR OBRAS
