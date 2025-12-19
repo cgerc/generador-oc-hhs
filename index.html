@@ -187,60 +187,73 @@
             document.getElementById('inputFecha').valueAsDate = new Date();
             document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
-            // CARGAR PROVEEDORES
-            fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
-                .then(r => r.text())
-                .then(csv => {
-                    const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
-                    const data = {};
+            // CARGAR PROVEEDORES (versión robusta que maneja comas en direcciones)
+fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
+    .then(r => r.text())
+    .then(csv => {
+        const lineas = csv.split('\n').map(l => l.trim()).filter(l => l);
+        const data = {};
 
-                    for (let i = 1; i < lineas.length; i++) {
-                        const c = lineas[i].split(',').map(x => x.replace(/^"|"$/g, '').trim());
-                        const clase = c[0];
-                        const razon = c[1];
-                        const condicionPago = c[2] || 'Contado';
-                        const rut = c[3] || '';
-                        const dir = c[4] || '';
-                        if (clase && razon) data[clase] = { razon, condicionPago, rut, dir };
-                    }
+        for (let i = 1; i < lineas.length; i++) {
+            // Parseo avanzado que respeta comas dentro de comillas
+            const campos = lineas[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+            const c = campos.map(x => x.replace(/^"|"$/g, '').trim());
 
-                    const selProv = document.getElementById('inputProveedor');
-                    selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
-                    Object.keys(data).sort().forEach(clase => {
-                        const opt = document.createElement('option');
-                        opt.value = clase;
-                        opt.textContent = data[clase].razon;
-                        selProv.appendChild(opt);
-                    });
+            const clase = c[0] || '';
+            const razon = c[1] || '';
+            const condicionPago = c[2] || 'Contado';
+            const rut = c[3] || '';
+            const dir = c[4] || '';
 
-                    const selClase = document.getElementById('newClase');
-                    selClase.innerHTML = '<option value="">Clase</option>';
-                    Object.keys(data).sort().forEach(clase => {
-                        const opt = document.createElement('option');
-                        opt.value = clase;
-                        opt.textContent = clase;
-                        selClase.appendChild(opt);
-                    });
+            if (clase && razon) {  // Solo agrega si tiene clase y razón social
+                data[clase] = { razon, condicionPago, rut, dir };
+            }
+        }
 
-                    selProv.onchange = () => {
-                        const p = data[selProv.value];
-                        if (!p) return;
-                        document.getElementById('dispProv').textContent = p.razon;
-                        document.getElementById('inputRutProv').value = p.rut;
-                        document.getElementById('inputDireccion').value = p.dir;
-                        document.getElementById('dispRut').textContent = p.rut;
-                        document.getElementById('dispDir').textContent = p.dir;
+        // Dropdown Razón Social
+        const selProv = document.getElementById('inputProveedor');
+        selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
+        Object.keys(data).sort().forEach(clase => {
+            const opt = document.createElement('option');
+            opt.value = clase;
+            opt.textContent = data[clase].razon;
+            selProv.appendChild(opt);
+        });
 
-                        const condicionSelect = document.getElementById('inputCondicionPago');
-                        condicionSelect.innerHTML = `<option value="Contado">Contado</option><option value="Crédito">Crédito</option>`;
-                        condicionSelect.value = p.condicionPago;
-                        document.getElementById('dispCondicionPago').textContent = p.condicionPago;
+        // Dropdown Clase para ítems
+        const selClase = document.getElementById('newClase');
+        selClase.innerHTML = '<option value="">Clase</option>';
+        Object.keys(data).sort().forEach(clase => {
+            const opt = document.createElement('option');
+            opt.value = clase;
+            opt.textContent = clase;
+            selClase.appendChild(opt);
+        });
 
-                        condicionSelect.onchange = () => {
-                            document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
-                        };
-                    };
-                });
+        // Cuando selecciona proveedor
+        selProv.onchange = () => {
+            const p = data[selProv.value];
+            if (!p) return;
+            document.getElementById('dispProv').textContent = p.razon;
+            document.getElementById('inputRutProv').value = p.rut;
+            document.getElementById('inputDireccion').value = p.dir;
+            document.getElementById('dispRut').textContent = p.rut;
+            document.getElementById('dispDir').textContent = p.dir;
+
+            const condicionSelect = document.getElementById('inputCondicionPago');
+            condicionSelect.innerHTML = `<option value="Contado">Contado</option><option value="Crédito">Crédito</option>`;
+            condicionSelect.value = p.condicionPago || 'Contado';
+            document.getElementById('dispCondicionPago').textContent = p.condicionPago || 'Contado';
+
+            condicionSelect.onchange = () => {
+                document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
+            };
+        };
+    })
+    .catch(err => {
+        console.error('Error cargando proveedores:', err);
+        alert('Error al cargar proveedores. Revisa la consola (F12)');
+    });
 
             // CARGAR OBRAS
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
@@ -261,7 +274,8 @@
                     selObra.onchange = () => {
                         document.getElementById('dispObra').textContent = selObra.value || '–';
                     };
-                });
+                })
+                .catch(err => console.error('Error cargando obras:', err));
         });
 
         // === ÍTEMS ===
