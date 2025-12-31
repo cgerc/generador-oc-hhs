@@ -18,6 +18,12 @@
             page-break-inside: avoid !important;
         }
         .page { page-break-after: always; }
+
+        /* Nueva sección para OCs guardadas */
+        .ocs-section { margin-top: 30px; background: #f9f9f9; padding: 15px; border-radius: 6px; }
+        .ocs-list { max-height: 200px; overflow-y: auto; }
+        .oc-item { padding: 8px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .oc-item button { width: auto; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -40,11 +46,22 @@
 
         <h3>Ítems</h3>
         <div id="items-form">
-           <select id="newClase"><option value="" disabled selected>Clase</option></select>
+            <select id="newClase"><option value="" disabled selected>Clase</option></select>
             <input type="text" id="newDesc" placeholder="Descripción">
             <input type="number" id="newQty" placeholder="Cant." style="width: 70px;">
             <input type="number" id="newPrice" placeholder="Precio Unit.">
             <button onclick="agregarItem()">+ Agregar</button>
+        </div>
+
+        <!-- Nueva sección para editar número de OC -->
+        <h3>Configuración de Número de OC</h3>
+        <input type="number" id="editOcNumber" placeholder="Editar número actual de OC" style="width: 70%;">
+        <button onclick="actualizarNumeroManual()" style="width: 28%;">Actualizar</button>
+
+        <!-- Nueva sección para OCs guardadas -->
+        <div class="ocs-section">
+            <h3>Órdenes de Compra Guardadas</h3>
+            <div id="ocsList" class="ocs-list"></div>
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
@@ -140,12 +157,111 @@
 
         // === NÚMERO DE OC INCREMENTAL ===
         const KEY_OC = 'ultimaOC_HHS';
+        const KEY_OCS = 'ocs_HHS'; // Nueva clave para almacenar OCs
         let numeroActual = parseInt(localStorage.getItem(KEY_OC) || '1');
+        let ocsGuardadas = JSON.parse(localStorage.getItem(KEY_OCS)) || [];
 
         function actualizarNumeroOC() {
             const padded = String(numeroActual).padStart(4, '0');
             document.getElementById('ocNum').textContent = padded;
             document.getElementById('proximaOC').textContent = String(numeroActual + 1).padStart(4, '0');
+        }
+
+        // Nueva función para actualizar número manualmente
+        function actualizarNumeroManual() {
+            const nuevoNumero = parseInt(document.getElementById('editOcNumber').value);
+            if (isNaN(nuevoNumero) || nuevoNumero < 1) {
+                alert('Ingrese un número válido mayor o igual a 1.');
+                return;
+            }
+            numeroActual = nuevoNumero;
+            localStorage.setItem(KEY_OC, numeroActual);
+            actualizarNumeroOC();
+            document.getElementById('editOcNumber').value = '';
+            alert('Número de OC actualizado correctamente.');
+        }
+
+        // Nueva función para guardar la OC actual
+        function guardarOC() {
+            const ocData = {
+                numero: document.getElementById('ocNum').textContent,
+                fecha: document.getElementById('dispFecha').textContent,
+                obra: document.getElementById('dispObra').textContent,
+                proveedor: document.getElementById('dispProv').textContent,
+                rut: document.getElementById('dispRut').textContent,
+                direccion: document.getElementById('dispDir').textContent,
+                condicionPago: document.getElementById('dispCondicionPago').textContent,
+                items: [...items], // Copia de los items
+                notas: [...notasExtra], // Copia de las notas
+                totalNeto: document.getElementById('totalNeto').textContent,
+                totalIva: document.getElementById('totalIva').textContent,
+                totalFinal: document.getElementById('totalFinal').textContent
+            };
+            ocsGuardadas.push(ocData);
+            localStorage.setItem(KEY_OCS, JSON.stringify(ocsGuardadas));
+            renderizarOCsGuardadas();
+        }
+
+        // Nueva función para renderizar lista de OCs guardadas
+        function renderizarOCsGuardadas() {
+            const listContainer = document.getElementById('ocsList');
+            listContainer.innerHTML = '';
+            if (ocsGuardadas.length === 0) {
+                listContainer.innerHTML = '<em style="color:#999;">No hay OCs guardadas.</em>';
+                return;
+            }
+            ocsGuardadas.forEach((oc, index) => {
+                const div = document.createElement('div');
+                div.className = 'oc-item';
+                div.innerHTML = `
+                    <span>OC N°${oc.numero} - ${oc.obra} (${oc.fecha})</span>
+                    <div>
+                        <button onclick="cargarOC(${index})">Cargar</button>
+                        <button onclick="borrarOC(${index})">Borrar</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        // Nueva función para cargar una OC guardada (para edición)
+        function cargarOC(index) {
+            if (!confirm('¿Cargar esta OC? Se sobrescribirán los datos actuales.')) return;
+            const oc = ocsGuardadas[index];
+
+            // Cargar datos básicos
+            document.getElementById('inputObraSelect').value = oc.obra;
+            document.getElementById('dispObra').textContent = oc.obra;
+            document.getElementById('inputProveedor').value = ''; // Necesita mapear de vuelta, pero como proveedor es por clase, asumir búsqueda
+            document.getElementById('dispProv').textContent = oc.proveedor;
+            document.getElementById('inputRutProv').value = oc.rut;
+            document.getElementById('dispRut').textContent = oc.rut;
+            document.getElementById('inputDireccion').value = oc.direccion;
+            document.getElementById('dispDir').textContent = oc.direccion;
+            document.getElementById('inputCondicionPago').value = oc.condicionPago;
+            document.getElementById('dispCondicionPago').textContent = oc.condicionPago;
+
+            // Cargar fecha (asumir actual, o setear si guardada)
+            // Nota: fecha es readonly, pero para edición, quizás permitir cambio
+
+            // Cargar items
+            items = [...oc.items];
+            renderizarTabla();
+
+            // Cargar notas
+            notasExtra = [...oc.notas];
+            renderizarNotas();
+
+            // Opcional: No cambiar número de OC, ya que es para editar una nueva basada en esta
+            alert('OC cargada para edición. Puedes modificar y generar una nueva.');
+        }
+
+        // Nueva función para borrar OC guardada
+        function borrarOC(index) {
+            if (!confirm('¿Borrar esta OC guardada?')) return;
+            ocsGuardadas.splice(index, 1);
+            localStorage.setItem(KEY_OCS, JSON.stringify(ocsGuardadas));
+            renderizarOCsGuardadas();
         }
 
         function generarPDF() {
@@ -174,105 +290,107 @@
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
+                guardarOC(); // Guardar la OC antes de incrementar
                 numeroActual++;
                 localStorage.setItem(KEY_OC, numeroActual);
                 actualizarNumeroOC();
             });
         }
 
-        // Inicializar número
+        // Inicializar número y OCs
         actualizarNumeroOC();
+        renderizarOCsGuardadas();
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('inputFecha').valueAsDate = new Date();
             document.getElementById('dispFecha').innerText = new Date().toLocaleDateString('es-CL');
 
             // CARGAR PROVEEDORES - VERSIÓN QUE SÍ FUNCIONA CON TUS 38 FILAS
-fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
-    .then(response => response.text())
-    .then(csv => {
-        const rows = csv.split('\n').map(row => row.trim()).filter(row => row);
-        const data = {};
+            fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?output=csv')
+                .then(response => response.text())
+                .then(csv => {
+                    const rows = csv.split('\n').map(row => row.trim()).filter(row => row);
+                    const data = {};
 
-        // Saltamos la cabecera
-        for (let i = 1; i < rows.length; i++) {
-            let row = rows[i];
-            let fields = [];
-            let field = '';
-            let inQuotes = false;
+                    // Saltamos la cabecera
+                    for (let i = 1; i < rows.length; i++) {
+                        let row = rows[i];
+                        let fields = [];
+                        let field = '';
+                        let inQuotes = false;
 
-            // Parseo manual carácter por carácter
-            for (let char of row + ',') {
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    fields.push(field.trim());
-                    field = '';
-                } else {
-                    field += char;
-                }
-            }
+                        // Parseo manual carácter por carácter
+                        for (let char of row + ',') {
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === ',' && !inQuotes) {
+                                fields.push(field.trim());
+                                field = '';
+                            } else {
+                                field += char;
+                            }
+                        }
 
-            // Limpiar comillas
-            fields = fields.map(f => f.replace(/^"|"$/g, '').trim());
+                        // Limpiar comillas
+                        fields = fields.map(f => f.replace(/^"|"$/g, '').trim());
 
-            const clase = fields[0] || '';
-            const razon = fields[1] || '';
-            const condicionPago = fields[2] || 'Contado';
-            const rut = fields[3] || '';
-            const dir = fields[4] || '';
+                        const clase = fields[0] || '';
+                        const razon = fields[1] || '';
+                        const condicionPago = fields[2] || 'Contado';
+                        const rut = fields[3] || '';
+                        const dir = fields[4] || '';
 
-            if (clase && razon) {
-                data[clase] = { razon, condicionPago, rut, dir };
-            }
-        }
+                        if (clase && razon) {
+                            data[clase] = { razon, condicionPago, rut, dir };
+                        }
+                    }
 
-        console.log('Proveedores cargados:', Object.keys(data).length); // <-- Esto te dirá cuántas cargó
+                    console.log('Proveedores cargados:', Object.keys(data).length); // <-- Esto te dirá cuántas cargó
 
-        // Dropdown Razón Social
-        const selProv = document.getElementById('inputProveedor');
-        selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
-        Object.keys(data).sort().forEach(clase => {
-            const opt = document.createElement('option');
-            opt.value = clase;
-            opt.textContent = data[clase].razon;
-            selProv.appendChild(opt);
-        });
+                    // Dropdown Razón Social
+                    const selProv = document.getElementById('inputProveedor');
+                    selProv.innerHTML = '<option value="">Selecciona Razón Social...</option>';
+                    Object.keys(data).sort().forEach(clase => {
+                        const opt = document.createElement('option');
+                        opt.value = clase;
+                        opt.textContent = data[clase].razon;
+                        selProv.appendChild(opt);
+                    });
 
-        // Dropdown Clase para ítems
-        const selClase = document.getElementById('newClase');
-        selClase.innerHTML = '<option value="">Clase</option>';
-        Object.keys(data).sort().forEach(clase => {
-            const opt = document.createElement('option');
-            opt.value = clase;
-            opt.textContent = clase;
-            selClase.appendChild(opt);
-        });
+                    // Dropdown Clase para ítems
+                    const selClase = document.getElementById('newClase');
+                    selClase.innerHTML = '<option value="">Clase</option>';
+                    Object.keys(data).sort().forEach(clase => {
+                        const opt = document.createElement('option');
+                        opt.value = clase;
+                        opt.textContent = clase;
+                        selClase.appendChild(opt);
+                    });
 
-        // Cuando cambias proveedor
-        selProv.onchange = () => {
-            const p = data[selProv.value];
-            if (!p) return;
-            document.getElementById('dispProv').textContent = p.razon;
-            document.getElementById('inputRutProv').value = p.rut;
-            document.getElementById('inputDireccion').value = p.dir;
-            document.getElementById('dispRut').textContent = p.rut;
-            document.getElementById('dispDir').textContent = p.dir;
+                    // Cuando cambias proveedor
+                    selProv.onchange = () => {
+                        const p = data[selProv.value];
+                        if (!p) return;
+                        document.getElementById('dispProv').textContent = p.razon;
+                        document.getElementById('inputRutProv').value = p.rut;
+                        document.getElementById('inputDireccion').value = p.dir;
+                        document.getElementById('dispRut').textContent = p.rut;
+                        document.getElementById('dispDir').textContent = p.dir;
 
-            const condicionSelect = document.getElementById('inputCondicionPago');
-            condicionSelect.innerHTML = `<option value="Contado">Contado</option><option value="Crédito">Crédito</option>`;
-            condicionSelect.value = p.condicionPago || 'Contado';
-            document.getElementById('dispCondicionPago').textContent = p.condicionPago || 'Contado';
+                        const condicionSelect = document.getElementById('inputCondicionPago');
+                        condicionSelect.innerHTML = `<option value="Contado">Contado</option><option value="Crédito">Crédito</option>`;
+                        condicionSelect.value = p.condicionPago || 'Contado';
+                        document.getElementById('dispCondicionPago').textContent = p.condicionPago || 'Contado';
 
-            condicionSelect.onchange = () => {
-                document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
-            };
-        };
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('No se pudieron cargar los proveedores');
-    });
+                        condicionSelect.onchange = () => {
+                            document.getElementById('dispCondicionPago').textContent = condicionSelect.value;
+                        };
+                    };
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('No se pudieron cargar los proveedores');
+                });
 
             // CARGAR OBRAS
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ0W7Yhu123yENGAHaV5Ok-yX5DkPO_7orj9rydaVbI_f4DDQN41MPc7nuGSIkaO_-vBeRnM2rF9SR/pub?gid=1397970288&single=true&output=csv')
